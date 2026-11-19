@@ -310,6 +310,8 @@ async function translate(text, target) {
 function setUp(ipcMain, getWindow) {
   load()
   app.userAgentFallback = userAgent()
+  // Quitting closes a sign-in browser window this app opened.
+  app.on('before-quit', () => browserSignIn.cancel())
   ipcMain.handle('reddit:accounts', () => accounts.map(publicAccount))
   ipcMain.handle('reddit:sign-in', (_e, reauthId) => signIn(getWindow(), reauthId))
   ipcMain.handle('reddit:browser', () => browserSignIn.findBrowser()?.name ?? null)

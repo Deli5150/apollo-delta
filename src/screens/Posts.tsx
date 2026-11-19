@@ -26,23 +26,19 @@ export function FeedWithReader({ feed, showBack, left }: { feed: string; showBac
   // Room for both: the window minus the sidebar (and list) must fit a feed and a reader.
   const split = wide && width >= 1000
   const onOpen = useCallback((p: Post) => (split ? setOpen(p) : go('Thread', { id: p.id, post: p })), [split])
-  if (!split) return <Feed feed={feed} onOpen={onOpen} showBack={showBack} left={left} />
+  // The comments pane opens beside the feed only once you pick a post; until then the feed has
+  // the whole width. The feed stays the same view either way, so it keeps its scroll position.
+  const reading = split && open
   return (
     <View style={{ flex: 1, flexDirection: 'row' }}>
-      <View style={{ width: Math.min(560, Math.max(380, width * 0.36)), borderRightWidth: 1, borderColor: colors.separator }}>
-        <Feed feed={feed} onOpen={onOpen} selected={open?.name} showBack={showBack} left={left} />
+      <View style={reading ? { width: Math.min(560, Math.max(380, width * 0.36)), borderRightWidth: 1, borderColor: colors.separator } : { flex: 1 }}>
+        <Feed feed={feed} onOpen={onOpen} selected={reading ? open.name : null} showBack={showBack} left={left} />
       </View>
-      <View style={{ flex: 1 }}>{open ? <ThreadView key={open.name} id={open.id} initial={open} embedded onClose={() => setOpen(null)} /> : <ReaderPlaceholder />}</View>
-    </View>
-  )
-}
-
-function ReaderPlaceholder() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
-      <View style={{ opacity: 0.35 }}>
-        <IconButton icon="chatbubbles-outline" label="Pick a post" size={54} color={colors.faint} />
-      </View>
+      {reading && (
+        <View style={{ flex: 1 }}>
+          <ThreadView key={open.name} id={open.id} initial={open} embedded onClose={() => setOpen(null)} />
+        </View>
+      )}
     </View>
   )
 }

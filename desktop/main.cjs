@@ -69,7 +69,9 @@ function createWindow() {
   // `npm run dev` points the app at the Expo dev server (live reload) instead of the built web/.
   win.loadURL(process.env.DELTA_DEV_URL || 'app://delta/')
   win.once('ready-to-show', () => {
-    if (!process.argv.includes('--hidden')) win.show()
+    // Screenshot test runs open behind your windows instead of taking focus.
+    if (process.env.DELTA_SHOTS) win.showInactive()
+    else if (!process.argv.includes('--hidden')) win.show()
   })
   win.webContents.on('did-finish-load', () => {
     // Slim scrollbars that sit on any theme.

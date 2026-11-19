@@ -18,7 +18,7 @@ import { Avatar, Button, Empty, ErrorView, Header, IconButton, Loading } from '.
 import { showMenu } from '../ui/overlays'
 import { PostCard } from '../ui/PostCard'
 import { SignInButtons } from '../ui/SignIn'
-import { colors, fs } from '../ui/theme'
+import { colors, fs, MAX_WIDTH } from '../ui/theme'
 import { toast } from '../ui/toast'
 
 // A feed of posts: Home, Popular, All, a subreddit, several, or a multireddit.
@@ -243,8 +243,12 @@ export function Feed({ feed, onOpen, selected, left, showBack }: FeedProps) {
         ref={list}
         data={shown}
         keyExtractor={(p) => p.name}
-        renderItem={({ item }) => <PostCard post={item} showSubreddit={!sub} width={width} selected={selected === item.name} onOpen={open} />}
-        ListHeaderComponent={sr ? <SubredditHeader sr={sr} onAbout={() => go('About', { sr: sr.name })} /> : undefined}
+        renderItem={({ item }) => (
+          <View style={{ width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' }}>
+            <PostCard post={item} showSubreddit={!sub} width={Math.min(width, MAX_WIDTH)} selected={selected === item.name} onOpen={open} />
+          </View>
+        )}
+        ListHeaderComponent={sr ? <View style={{ width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' }}><SubredditHeader sr={sr} onAbout={() => go('About', { sr: sr.name })} /></View> : undefined}
         ListEmptyComponent={
           loading ? <Loading /> : error ? <ErrorView error={error.message} onRetry={() => (setLoading(true), void load(false))} /> : <Empty icon="file-tray-outline" title="No posts" text={items.length ? 'Your filters hid every post here.' : undefined} />
         }
