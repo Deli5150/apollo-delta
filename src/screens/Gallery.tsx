@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Image } from 'expo-image'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, View } from 'react-native'
 import { feedTitle, initialSort } from '../lib/feeds'
 import { covers, keep } from '../lib/filters'
@@ -12,7 +12,7 @@ import { useStore } from '../lib/store'
 import type { RootParams } from '../nav'
 import { postMenu } from '../ui/actions'
 import { Empty, ErrorView, Header, IconButton, Loading, Screen } from '../ui/kit'
-import { openViewer, pick, viewerItems } from '../ui/media'
+import { openViewer, pick, viewerItems, type ViewerSequence } from '../ui/media'
 import { colors } from '../ui/theme'
 
 // Gallery View: a feed's (or your saved posts') pictures and videos as a grid. Pinch-free on
@@ -50,6 +50,22 @@ export default function Gallery({ route }: NativeStackScreenProps<RootParams, 'G
   )
   useEffect(() => void load(null), [load])
 
+  // The viewer's arrow keys go on through the grid's posts, loading more near the end.
+  const latest = useRef({ items, after, loading })
+  latest.current = { items, after, loading }
+  const sequence = useMemo<ViewerSequence>(
+    () => ({
+      posts: () => latest.current.items,
+      onNearEnd: () => {
+        const { after: next, loading: busy } = latest.current
+        if (next && !busy) {
+          setLoading(true)
+          void load(next)
+        }
+      }
+    }),
+    [load]
+  )
   const size = Math.floor(width / cols)
   return (
     <Screen>
@@ -75,7 +91,7 @@ export default function Gallery({ route }: NativeStackScreenProps<RootParams, 'G
             const cover = covers(item, settings)
             const blur = (item.nsfw && cover.nsfw) || (item.spoiler && cover.spoiler)
             return (
-              <Pressable onPress={() => openViewer(viewerItems(m), 0, item)} onLongPress={() => postMenu(item)} style={{ width: size, height: size, padding: 1 }}>
+              <Pressable onPress={() => openViewer(viewerItems(m), 0, item, sequence)} onLongPress={() => postMenu(item)} style={{ width: size, height: size, padding: 1 }}>
                 <View style={{ flex: 1, backgroundColor: colors.field }}>
                   {thumb && <Image source={{ uri: thumb }} style={{ width: '100%', height: '100%' }} contentFit="cover" blurRadius={blur ? 30 : 0} recyclingKey={item.name} />}
                   {(m.kind === 'video' || m.kind === 'gallery' || m.kind === 'gif') && (
@@ -89,7 +105,7 @@ export default function Gallery({ route }: NativeStackScreenProps<RootParams, 'G
           }}
           ListEmptyComponent={loading ? <Loading /> : error ? <ErrorView error={error} /> : <Empty icon="images-outline" title="No pictures or videos here" />}
           ListFooterComponent={after && items.length ? <ActivityIndicator style={{ padding: 20 }} color={colors.accentHi} /> : undefined}
-          onEndReached={() => after && void load(after)}
+          onEndReached={() => after && !loading && (setLoading(true), void load(after))}
           onEndReachedThreshold={1.5}
         />
       </View>

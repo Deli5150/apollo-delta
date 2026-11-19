@@ -1,6 +1,6 @@
 import * as parse from './parse'
 import { get, myName, post, transport, useSession } from './transport'
-import type { Comment, CommentSort, Listing, Message, More, Multi, Post, Sort, Subreddit, TimeRange, Trophy, User, Vote } from './types'
+import type { Comment, CommentSort, Flair, Listing, Message, More, Multi, Post, Sort, Subreddit, TimeRange, Trophy, User, Vote } from './types'
 
 // Everything the app asks Reddit for, by what it is rather than by URL.
 
@@ -154,10 +154,28 @@ export async function uploadImage(file: { name: string; mimetype: string; base64
   return r.url
 }
 
-export async function linkFlairs(sr: string): Promise<Array<{ id: string; text: string; bg?: string; editable: boolean }>> {
+export interface LinkFlair {
+  id: string
+  text: string
+  /** How it looks: colours and emoji, for previews. */
+  flair: Flair
+  editable: boolean
+  modOnly: boolean
+}
+
+/** The post flairs a subreddit offers. */
+export async function linkFlairs(sr: string): Promise<LinkFlair[]> {
   try {
     const j = await get(`/r/${sr}/api/link_flair_v2`)
-    return (Array.isArray(j) ? j : []).map((f: Raw) => ({ id: f.id, text: f.text, bg: f.background_color || undefined, editable: Boolean(f.text_editable) }))
+    return (Array.isArray(j) ? j : [])
+      .map((f: Raw) => ({
+        id: f.id,
+        text: f.text ?? '',
+        flair: parse.flair(f.text, f.type === 'richtext' ? f.richtext : null, f.background_color, f.text_color) ?? ({ text: f.text ?? '' } as Flair),
+        editable: Boolean(f.text_editable),
+        modOnly: Boolean(f.mod_only)
+      }))
+      .filter((f: LinkFlair) => f.text || f.flair.parts?.length)
   } catch {
     return []
   }

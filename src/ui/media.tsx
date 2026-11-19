@@ -22,16 +22,25 @@ const ratio = (w?: number, h?: number) => (w && h ? Math.min(Math.max(w / h, 0.5
 
 export type ViewerItem = { kind: 'image'; url: string; caption?: string; width?: number; height?: number } | { kind: 'video'; hls?: string; mp4?: string; poster?: string }
 
+/** Posts the viewer can step through (Gallery View): the arrow keys go on to the next post. */
+export interface ViewerSequence {
+  /** The posts, read each time (the grid loads more as you go). */
+  posts: () => Post[]
+  /** Called when you reach the last few, to load more. */
+  onNearEnd?: () => void
+}
+
 interface Viewer {
   items: ViewerItem[]
   index: number
   post?: Post
+  sequence?: ViewerSequence
 }
 
 export const useViewer = create<{ open: Viewer | null }>(() => ({ open: null }))
 
-export function openViewer(items: ViewerItem[], index = 0, post?: Post): void {
-  if (items.length) useViewer.setState({ open: { items, index, post } })
+export function openViewer(items: ViewerItem[], index = 0, post?: Post, sequence?: ViewerSequence): void {
+  if (items.length) useViewer.setState({ open: { items, index, post, sequence } })
 }
 
 /** The viewer items for a post's media. */

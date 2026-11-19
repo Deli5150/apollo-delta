@@ -11,7 +11,7 @@ const goodUrl = (u?: string | null): string | undefined => (u && /^https?:\/\//.
 
 const likes = (v: boolean | null | undefined): Vote => (v === true ? 1 : v === false ? -1 : 0)
 
-function flair(text?: string | null, richtext?: Raw[] | null, bg?: string | null, color?: string | null): Flair | undefined {
+export function flair(text?: string | null, richtext?: Raw[] | null, bg?: string | null, color?: string | null): Flair | undefined {
   const parts: NonNullable<Flair['parts']> = []
   for (const r of richtext ?? []) {
     if (r.e === 'text' && r.t) parts.push({ t: 'text', v: decode(r.t) })

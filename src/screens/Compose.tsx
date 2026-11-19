@@ -10,7 +10,8 @@ import { setEdited } from '../lib/things'
 import { back, go, openUrl, parseRedditLink, type RootParams } from '../nav'
 import { fail } from '../ui/actions'
 import { Button, Field, Header, Screen, Segmented, Toggle } from '../ui/kit'
-import { showMenu } from '../ui/overlays'
+import { closeSheet, showSheet } from '../ui/overlays'
+import { FlairPill } from '../ui/PostCard'
 import { colors, font, fs } from '../ui/theme'
 import { toast } from '../ui/toast'
 
@@ -41,6 +42,35 @@ function MarkdownBar({ onWrap }: { onWrap: (before: string, after?: string, plac
   )
 }
 
+/** Choosing a post flair: each one drawn the way it shows on the post. */
+function FlairPicker({ flairs, selected, onPick }: { flairs: api.LinkFlair[]; selected: api.LinkFlair | null; onPick: (f: api.LinkFlair | null) => void }) {
+  const pick = (f: api.LinkFlair | null) => {
+    closeSheet()
+    onPick(f)
+  }
+  const row = (key: string, on: boolean, content: React.ReactNode, f: api.LinkFlair | null, sub?: string) => (
+    <Pressable key={key} onPress={() => pick(f)} style={({ pressed, hovered }: any) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 50, paddingHorizontal: 16, paddingVertical: 8, borderTopWidth: key === 'none' ? 0 : 1, borderColor: colors.separator, backgroundColor: pressed ? colors.field : hovered ? colors.card : 'transparent' })}>
+      <View style={{ flex: 1, gap: 3, alignItems: 'flex-start' }}>
+        {content}
+        {sub ? <Text style={{ color: colors.faint, fontSize: fs(11.5) }}>{sub}</Text> : null}
+      </View>
+      {on && <Ionicons name="checkmark" size={19} color={colors.accentHi} />}
+    </Pressable>
+  )
+  return (
+    <View style={{ backgroundColor: colors.cardHi, borderRadius: 22, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}>
+      <Text style={{ color: colors.dim, fontWeight: '600', fontSize: fs(13), textAlign: 'center', padding: 14, borderBottomWidth: 1, borderColor: colors.separator }}>Post Flair</Text>
+      <ScrollView style={{ maxHeight: 460 }}>
+        {row('none', !selected, <Text style={{ color: colors.text, fontSize: fs(15) }}>No flair</Text>, null)}
+        {flairs.map((f) => row(f.id, selected?.id === f.id, <FlairPill flair={f.flair} />, f, f.modOnly ? 'Moderators only' : undefined))}
+      </ScrollView>
+      <Pressable onPress={closeSheet} style={{ height: 52, alignItems: 'center', justifyContent: 'center', borderTopWidth: 1, borderColor: colors.separator }}>
+        <Text style={{ color: colors.accentHi, fontSize: fs(16), fontWeight: '600' }}>Cancel</Text>
+      </Pressable>
+    </View>
+  )
+}
+
 export default function Compose({ route }: NativeStackScreenProps<RootParams, 'Compose'>) {
   const p = route.params
   const [text, setText] = useState(p.mode === 'edit' ? p.text : p.mode === 'reply' && p.quote ? `> ${p.quote}\n\n` : '')
@@ -52,8 +82,8 @@ export default function Compose({ route }: NativeStackScreenProps<RootParams, 'C
   const [url, setUrl] = useState('')
   const [nsfw, setNsfw] = useState(false)
   const [spoiler, setSpoiler] = useState(false)
-  const [flair, setFlair] = useState<{ id: string; text: string } | null>(null)
-  const [flairs, setFlairs] = useState<Array<{ id: string; text: string }>>([])
+  const [flair, setFlair] = useState<api.LinkFlair | null>(null)
+  const [flairs, setFlairs] = useState<api.LinkFlair[]>([])
   const [sending, setSending] = useState(false)
   const [uploading, setUploading] = useState(false)
   const selection = useRef({ start: text.length, end: text.length })
@@ -157,7 +187,15 @@ export default function Compose({ route }: NativeStackScreenProps<RootParams, 'C
                   <Toggle value={spoiler} onChange={setSpoiler} />
                   <Text style={{ color: colors.text }}>Spoiler</Text>
                 </View>
-                {flairs.length > 0 && <Button title={flair ? flair.text : 'Add Flair'} kind="secondary" icon="pricetag-outline" onPress={() => showMenu('Flair', [{ label: 'None', selected: !flair, onPress: () => setFlair(null) }, ...flairs.map((f) => ({ label: f.text, selected: flair?.id === f.id, onPress: () => setFlair(f) }))])} style={{ height: 34 }} />}
+                {flairs.length > 0 &&
+                  (flair ? (
+                    <Pressable onPress={() => showSheet(<FlairPicker flairs={flairs} selected={flair} onPick={setFlair} />)} accessibilityLabel="Change Flair" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 34, paddingHorizontal: 10, borderRadius: 12, backgroundColor: colors.field }}>
+                      <FlairPill flair={flair.flair} />
+                      <Ionicons name="chevron-down" size={14} color={colors.dim} />
+                    </Pressable>
+                  ) : (
+                    <Button title="Add Flair" kind="secondary" icon="pricetag-outline" onPress={() => showSheet(<FlairPicker flairs={flairs} selected={flair} onPick={setFlair} />)} style={{ height: 34 }} />
+                  ))}
               </View>
             </>
           )}
