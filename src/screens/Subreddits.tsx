@@ -8,7 +8,7 @@ import { useSession } from '../lib/reddit/transport'
 import { isFavorite, toggleFavorite, useStore } from '../lib/store'
 import { go } from '../nav'
 import { fail } from '../ui/actions'
-import { Avatar, Field, Header, IconButton } from '../ui/kit'
+import { Avatar, Field, Header, IconButton, Screen } from '../ui/kit'
 import { showMenu } from '../ui/overlays'
 import { colors, fs, hexA } from '../ui/theme'
 import { toast } from '../ui/toast'
@@ -153,5 +153,9 @@ export function SubredditList({ current, onPick, header = true }: { current?: st
 }
 
 export default function SubredditsScreen() {
-  return <SubredditList onPick={(feed) => go('Feed', { feed })} />
+  return (
+    <Screen>
+      <SubredditList onPick={(feed) => go('Feed', { feed })} />
+    </Screen>
+  )
 }

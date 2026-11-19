@@ -1,0 +1,23 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.deltareddit'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.deltareddit"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // React Native already ships OkHttp; this module uses it without React Native's cookie jar.
+  compileOnly "com.squareup.okhttp3:okhttp:4.9.2"
+}

@@ -3,7 +3,8 @@ import { Image } from 'expo-image'
 import { memo, useEffect, useRef, useState } from 'react'
 import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import { create } from 'zustand'
-import { desktop, type LinkPreview } from '../lib/storage'
+import { linkPreview } from '../lib/preview'
+import type { LinkPreview } from '../lib/storage'
 import type { Media, MediaImage, Post } from '../lib/reddit/types'
 import { colors, fs, hexA } from './theme'
 import { Video } from './Video'
@@ -91,9 +92,9 @@ const previews = new Map<string, LinkPreview | null>()
 export const LinkCard = memo(function LinkCard({ url, thumb, onPress, compact }: { url: string; thumb?: string; onPress: () => void; compact?: boolean }) {
   const [meta, setMeta] = useState<LinkPreview | null | undefined>(previews.get(url))
   useEffect(() => {
-    if (meta !== undefined || !desktop) return
+    if (meta !== undefined) return
     let live = true
-    void desktop.web.preview(url).then((m) => {
+    void linkPreview(url).then((m) => {
       previews.set(url, m)
       if (live) setMeta(m)
     })

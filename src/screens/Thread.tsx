@@ -15,7 +15,7 @@ import { toggleTranslation, useTranslations } from '../lib/translate'
 import { go, openUrl, type RootParams } from '../nav'
 import { commentMenu, doSave, doVote, fail, postMenu, share } from '../ui/actions'
 import { Html } from '../ui/Html'
-import { Avatar, Empty, ErrorView, Header, IconButton, Loading, Pill } from '../ui/kit'
+import { Avatar, Empty, ErrorView, Header, IconButton, Loading, Pill, Screen } from '../ui/kit'
 import { hasMedia, PostMedia } from '../ui/media'
 import { showMenu } from '../ui/overlays'
 import { FlairPill, ScoreButton, Time } from '../ui/PostCard'
@@ -455,6 +455,10 @@ export function ThreadView({ id, focus: focus0, initial, embedded, onClose, hide
 }
 
 export default function ThreadScreen({ route }: NativeStackScreenProps<RootParams, 'Thread'>) {
-  return <ThreadView id={route.params.id} focus={route.params.focus} initial={route.params.post} />
+  return (
+    <Screen>
+      <ThreadView id={route.params.id} focus={route.params.focus} initial={route.params.post} />
+    </Screen>
+  )
 }
 

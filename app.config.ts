@@ -30,7 +30,18 @@ const config: ExpoConfig = {
     predictiveBackGestureEnabled: false
   },
   web: { favicon: './assets/favicon.png', output: 'single', bundler: 'metro' },
-  plugins: ['expo-sharing', 'expo-image', './plugins/withReleaseSigning', './plugins/withoutCodeShrinking', './plugins/withPhoneArchitectures']
+  plugins: [
+    'expo-sharing',
+    'expo-image',
+    'expo-secure-store',
+    ['expo-video', { supportsPictureInPicture: true }],
+    ['expo-media-library', { photosPermission: 'Apollo Delta saves pictures and videos you choose to your gallery.', savePhotosPermission: 'Apollo Delta saves pictures and videos you choose to your gallery.', isAccessMediaLocationEnabled: false }],
+    ['expo-image-picker', { photosPermission: 'Apollo Delta lets you pick a picture to post.' }],
+    './plugins/withReleaseSigning',
+    './plugins/withoutCodeShrinking',
+    './plugins/withPhoneArchitectures',
+    './plugins/withGradleMemory'
+  ]
 }
 
 export default config

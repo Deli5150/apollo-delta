@@ -39,8 +39,16 @@ stack, updater and release tooling.
 - Video: hls.js on desktop (`src/ui/Video.web.tsx`); phones get a native player with the Android app.
 - Icon: an original mascot (rounded-delta robot with a ring) in `assets/src/icon.svg`; alternate
   colourways in `src/ui/AppIcon.tsx` (desktop sets the dock icon). Render: `npm run icons`.
-- Phones: `src/lib/reddit/mobile.ts` is a stub until the Android app (WebView sign-in; RN fetch
-  shares the WebView's CookieManager on Android).
+- Android (started 2026-11-19): sign-in = Reddit's page in a WebView (`src/ui/WebSignIn.tsx`, polls
+  /api/me.json from the page). `modules/delta-reddit` (Kotlin) reads the WebView's cookies incl.
+  httpOnly (CookieManager), then clears them, and sends requests with OkHttp *without* a cookie jar
+  (RN's fetch shares the WebView's jar, which would mix accounts). Accounts + cookies (chunked) in
+  expo-secure-store (`src/lib/reddit/mobile.ts`). Video = expo-video (`src/ui/Video.tsx`). Reddit's
+  page auto-opens a Google pop-up that blanked the WebView, so pop-ups are ignored; Google sign-in
+  on Android is not solved yet. Build: `npx expo prebuild -p android --clean`, local.properties
+  sdk.dir, JAVA_HOME=openjdk@17, `./gradlew assembleRelease` (plugins/withGradleMemory raises
+  memory). Release key credentials/delta-release.keystore alias delta, DELTA_RELEASE_* in
+  ~/.gradle/gradle.properties, SHA-1 DE:DE:C0:99:B8:DA:4E:92:06:3B:D1:64:39:08:66:85:46:65:CC:49.
 
 ## Before finishing a change
 

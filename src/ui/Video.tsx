@@ -1,8 +1,9 @@
-import { Image } from 'expo-image'
+import { useVideoPlayer, VideoView } from 'expo-video'
+import { useEffect } from 'react'
 import { Pressable, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 
-// Phones: replaced by a native player with the Android app. For now the poster with a play button.
+// Phones: Reddit's videos with expo-video, which plays the HLS stream (picture and sound together);
+// GIF-style clips are plain MP4s. The desktop app uses Video.web.tsx (hls.js).
 
 export interface VideoProps {
   hls?: string
@@ -17,13 +18,20 @@ export interface VideoProps {
   style?: Record<string, unknown>
 }
 
-export function Video({ poster, onPress }: VideoProps) {
+export function Video({ hls, mp4, autoPlay = true, muted = true, loop = true, controls = false, contain = true, onPress }: VideoProps) {
+  const source = hls ?? mp4 ?? null
+  const player = useVideoPlayer(source, (p) => {
+    p.loop = loop
+    p.muted = muted
+    if (autoPlay) p.play()
+  })
+  useEffect(() => {
+    player.muted = muted
+  }, [muted, player])
   return (
-    <Pressable onPress={onPress} style={{ flex: 1, backgroundColor: '#000' }}>
-      {poster && <Image source={{ uri: poster }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="contain" />}
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Ionicons name="play-circle" size={56} color="rgba(255,255,255,0.9)" />
-      </View>
-    </Pressable>
+    <View style={{ flex: 1, backgroundColor: '#000' }}>
+      <VideoView player={player} style={{ flex: 1 }} contentFit={contain ? 'contain' : 'cover'} nativeControls={controls} allowsPictureInPicture={controls} />
+      {onPress && !controls && <Pressable onPress={onPress} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />}
+    </View>
   )
 }

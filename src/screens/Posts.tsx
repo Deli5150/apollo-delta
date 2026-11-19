@@ -6,7 +6,7 @@ import { useWide } from '../lib/layout'
 import type { Post } from '../lib/reddit/types'
 import { useStore } from '../lib/store'
 import { go, type RootParams } from '../nav'
-import { IconButton } from '../ui/kit'
+import { IconButton, Screen } from '../ui/kit'
 import { colors } from '../ui/theme'
 import { Feed } from './Feed'
 import { SubredditList } from './Subreddits'
@@ -52,7 +52,7 @@ export default function Posts() {
   const roomForList = wide && width >= 1180
   const toggle = <IconButton icon="list" label={showList ? 'Hide Subreddits' : 'Show Subreddits'} active={showList && roomForList} onPress={() => (roomForList ? usePostsFeed.setState({ showList: !showList }) : go('Subreddits'))} />
   return (
-    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: colors.bg }}>
+    <Screen style={{ flexDirection: 'row' }}>
       {roomForList && showList && (
         <View style={{ width: 250, borderRightWidth: 1, borderColor: colors.separator }}>
           <SubredditList current={feed} onPick={(f) => usePostsFeed.setState({ feed: f })} />
@@ -61,10 +61,14 @@ export default function Posts() {
       <View style={{ flex: 1 }}>
         <FeedWithReader key={feed} feed={feed} left={toggle} showBack={false} />
       </View>
-    </View>
+    </Screen>
   )
 }
 
 export function FeedScreen({ route }: NativeStackScreenProps<RootParams, 'Feed'>) {
-  return <FeedWithReader feed={route.params.feed} />
+  return (
+    <Screen>
+      <FeedWithReader feed={route.params.feed} />
+    </Screen>
+  )
 }

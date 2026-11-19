@@ -28,6 +28,7 @@ import UserScreen, { Account, RecentlyRead, SavedScreen } from './src/screens/Us
 import { MediaViewerHost } from './src/ui/MediaViewer'
 import { OverlayHost } from './src/ui/overlays'
 import { BrowserSignInHost } from './src/ui/SignIn'
+import { WebSignInHost } from './src/ui/WebSignIn'
 import { Rail, TabBar, TABS } from './src/ui/TabBar'
 import { applyTheme, colors, setTextScale, themeKey } from './src/ui/theme'
 import { ToastHost } from './src/ui/toast'
@@ -249,6 +250,7 @@ export default function App() {
       <Shortcuts />
       <MediaViewerHost />
       <BrowserSignInHost />
+      <WebSignInHost />
       <ToastHost />
       <OverlayHost />
     </SafeAreaProvider>
