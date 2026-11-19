@@ -62,6 +62,10 @@ export interface DesktopBridge {
   reddit: {
     accounts(): Promise<AccountInfo[]>
     signIn(reauthId?: string): Promise<AccountInfo | null>
+    /** The browser "Sign in with Google" opens (Chrome, Edge, Brave…), or null if none is installed. */
+    browser(): Promise<string | null>
+    signInWithBrowser(reauthId?: string): Promise<AccountInfo | null>
+    cancelBrowser(): Promise<void>
     signOut(id: string): Promise<void>
     refresh(id: string): Promise<(AccountInfo & { expired?: boolean; me?: any }) | null>
     reorder(ids: string[]): Promise<void>

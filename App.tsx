@@ -26,6 +26,7 @@ import ThreadScreen from './src/screens/Thread'
 import UserScreen, { Account, RecentlyRead, SavedScreen } from './src/screens/User'
 import { MediaViewerHost } from './src/ui/MediaViewer'
 import { OverlayHost } from './src/ui/overlays'
+import { BrowserSignInHost } from './src/ui/SignIn'
 import { Rail, TabBar, TABS } from './src/ui/TabBar'
 import { applyTheme, colors, setTextScale, themeKey } from './src/ui/theme'
 import { ToastHost } from './src/ui/toast'
@@ -243,6 +244,7 @@ export default function App() {
       {ready && <InboxWatcher />}
       <Shortcuts />
       <MediaViewerHost />
+      <BrowserSignInHost />
       <ToastHost />
       <OverlayHost />
     </SafeAreaProvider>

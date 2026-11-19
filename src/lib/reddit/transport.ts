@@ -10,6 +10,9 @@ import { isCoolingDown, noteResult, routesFor, routeUrl } from './routes'
 export interface Transport {
   accounts(): Promise<AccountInfo[]>
   signIn(reauthId?: string): Promise<AccountInfo | null>
+  browser?(): Promise<string | null>
+  signInWithBrowser?(reauthId?: string): Promise<AccountInfo | null>
+  cancelBrowser?(): Promise<void>
   signOut(id: string): Promise<void>
   refresh(id: string): Promise<(AccountInfo & { expired?: boolean; me?: any }) | null>
   reorder(ids: string[]): Promise<void>
@@ -145,8 +148,9 @@ export async function refreshMe(): Promise<any | null> {
   return r.me ?? null
 }
 
-export async function signIn(reauthId?: string): Promise<AccountInfo | null> {
-  const a = await transport.signIn(reauthId)
+/** Signs in: in the app's own window, or (`google`) in a real browser, where Google and Apple sign-in work. */
+export async function signIn(reauthId?: string, google = false): Promise<AccountInfo | null> {
+  const a = google && transport.signInWithBrowser ? await transport.signInWithBrowser(reauthId) : await transport.signIn(reauthId)
   if (!a) return null
   const accounts = await transport.accounts()
   useSession.setState({ accounts, current: a.id, expired: false, me: null })

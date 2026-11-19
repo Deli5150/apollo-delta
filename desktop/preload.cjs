@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('apollodelta', {
   reddit: {
     accounts: () => ipcRenderer.invoke('reddit:accounts'),
     signIn: (reauthId) => ipcRenderer.invoke('reddit:sign-in', reauthId),
+    browser: () => ipcRenderer.invoke('reddit:browser'),
+    signInWithBrowser: (reauthId) => ipcRenderer.invoke('reddit:sign-in-browser', reauthId),
+    cancelBrowser: () => ipcRenderer.invoke('reddit:cancel-browser'),
     signOut: (id) => ipcRenderer.invoke('reddit:sign-out', id),
     refresh: (id) => ipcRenderer.invoke('reddit:refresh', id),
     reorder: (ids) => ipcRenderer.invoke('reddit:reorder', ids),

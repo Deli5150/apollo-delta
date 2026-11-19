@@ -17,6 +17,7 @@ import { fail } from '../ui/actions'
 import { Avatar, Button, Empty, ErrorView, Header, IconButton, Loading } from '../ui/kit'
 import { showMenu } from '../ui/overlays'
 import { PostCard } from '../ui/PostCard'
+import { SignInButtons } from '../ui/SignIn'
 import { colors, fs } from '../ui/theme'
 import { toast } from '../ui/toast'
 
@@ -231,7 +232,7 @@ export function Feed({ feed, onOpen, selected, left, showBack }: FeedProps) {
     return (
       <View style={{ flex: 1 }}>
         {header}
-        <Empty icon="person-circle-outline" title="Sign in to Reddit" text="Apollo Delta reads Reddit through your own signed-in session, so no API key is needed." action={<Button title="Sign In" icon="log-in-outline" onPress={() => go('SettingsPage', { page: 'accounts' })} />} />
+        <Empty icon="person-circle-outline" title="Sign in to Reddit" text="Apollo Delta reads Reddit through your own signed-in session, so no API key is needed." action={<SignInButtons />} />
       </View>
     )
 

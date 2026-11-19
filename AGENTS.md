@@ -14,6 +14,13 @@ stack, updater and release tooling.
   requests go from the main process with that session's cookies and a browser User-Agent; writes
   carry the session's modhash (`X-Modhash` + `uh`). Signed-out JSON is blocked by Reddit (403 block
   page), so sign-in is required.
+- Sign in with Google (`desktop/browser-signin.cjs`, user's request 2026-11-19): Google refuses
+  embedded windows ("This browser or app may not be secure", tested) and also any Chrome with a
+  DevTools port open (navigator.webdriver). So: plain Chrome/Edge/Brave with a fresh
+  `--user-data-dir` on reddit.com/login (`--app`), poll its Cookies file for the plain-text name
+  `reddit_session` (only set when signed in; Chrome flushes ~30s), kill it, relaunch `--headless=new
+  --remote-debugging-port=0` on the same profile, `Storage.getCookies`, import into the account's
+  partition, verify with /api/me.json, delete the profile.
 - Routes (`src/lib/reddit/routes.ts`): some paths are blocked on www for web sessions but served by
   oauth/old/api with the same cookie (hot/new/rising, r/all, search, /api/info, morechildren). Each
   pattern lists hosts in order; a block page tries the next; 3 in a row cools a host down. `routes.json`

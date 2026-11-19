@@ -29,6 +29,7 @@
       "preload.cjs",
       "updater.cjs",
       "reddit.cjs",
+      "browser-signin.cjs",
       "web/**",
       "build/tray*.png",
       "package.json",

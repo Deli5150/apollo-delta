@@ -23,6 +23,7 @@ import { Avatar, Button, Empty, Field, Group, Header, Page, Row, Screen, Segment
 import { confirm, showMenu } from '../ui/overlays'
 import { colors, fs, THEMES } from '../ui/theme'
 import { ThingList } from '../ui/ThingList'
+import { startSignIn, useSignInBrowser } from '../ui/SignIn'
 import { toast } from '../ui/toast'
 import { openUpdatePrompt } from '../ui/UpdatePrompt'
 import { COMMENT_SORTS } from './Thread'
@@ -119,16 +120,11 @@ export default function Settings() {
 function Accounts() {
   const { accounts, current, expired } = useSession(useShallow((s) => ({ accounts: s.accounts, current: s.current, expired: s.expired })))
   const [busy, setBusy] = useState(false)
-  const add = async (reauth?: string) => {
-    setBusy(true)
-    try {
-      const a = await signIn(reauth)
-      if (a) toast(`Signed in as u/${a.username}`)
-    } catch (e) {
-      fail(e)
-    } finally {
-      setBusy(false)
-    }
+  const browser = useSignInBrowser()
+  const add = async (reauth?: string, google = false) => {
+    setBusy(!google)
+    await startSignIn(google, reauth)
+    setBusy(false)
   }
   return (
     <Page>
@@ -137,7 +133,10 @@ function Accounts() {
           <Row icon="warning" iconColor={colors.danger} title="Your Reddit session has expired" sub="Sign in again to keep browsing." onPress={() => void add(current ?? undefined)} />
         </Group>
       )}
-      <Group title="Accounts" footer="Apollo Delta has no API key. You sign in on Reddit's own page in a separate window, and the app reads Reddit with that session, the way your browser does. Your password never passes through Apollo Delta.">
+      <Group
+        title="Accounts"
+        footer={`Apollo Delta has no API key. You sign in on Reddit's own page, and the app reads Reddit with that session, the way your browser does. Your password never passes through Apollo Delta.${browser ? ` Google won't sign in inside apps, so Sign in with Google opens Reddit's page in ${browser}, with a separate profile that's deleted afterwards.` : ''}`}
+      >
         <Rows>
           {[
             ...accounts.map((a) => (
@@ -151,13 +150,15 @@ function Accounts() {
                   showMenu(`u/${a.username}`, [
                     { label: 'Use This Account', selected: a.id === current, onPress: () => switchAccount(a.id) },
                     { label: 'Sign In Again', onPress: () => void add(a.id) },
+                    ...(browser ? [{ label: 'Sign In Again with Google', onPress: () => void add(a.id, true) }] : []),
                     { label: 'Sign Out', destructive: true, onPress: () => confirm(`Sign out of u/${a.username}?`, 'Its session is deleted from this computer.', 'Sign Out', () => void signOut(a.id)) }
                   ])
                 }
                 right={<Avatar uri={a.icon} name={a.username} size={30} />}
               />
             )),
-            <Row key="add" icon="add" iconColor={colors.accent} title={busy ? 'Waiting for Reddit…' : 'Add Account'} sub={busy ? 'Finish signing in in the Reddit window.' : 'Sign in with your Reddit username and password, Google or Apple.'} onPress={() => void add()} />
+            <Row key="add" icon="add" iconColor={colors.accent} title={busy ? 'Waiting for Reddit…' : 'Add Account'} sub={busy ? 'Finish signing in in the Reddit window.' : 'Sign in with your Reddit username and password.'} onPress={() => void add()} />,
+            browser ? <Row key="google" icon="logo-google" iconColor="#4285f4" title="Sign in with Google" sub={`Opens Reddit's sign-in in ${browser}, where Google and Apple sign-in work.`} onPress={() => void add(undefined, true)} /> : null
           ]}
         </Rows>
       </Group>

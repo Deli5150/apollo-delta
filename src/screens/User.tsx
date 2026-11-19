@@ -16,6 +16,7 @@ import { colors, fs } from '../ui/theme'
 import { ThingList } from '../ui/ThingList'
 import { toast } from '../ui/toast'
 import { PostCard } from '../ui/PostCard'
+import { SignInButtons, startSignIn } from '../ui/SignIn'
 
 // Profiles: anyone's (overview, posts, comments) and your own Account tab (plus saved, upvoted,
 // hidden, recently read, saved categories, and the account switcher).
@@ -157,7 +158,8 @@ export function accountSwitcher(): void {
   const { accounts, current } = useSession.getState()
   showMenu('Accounts', [
     ...accounts.map((a) => ({ label: `u/${a.username}`, selected: a.id === current, onPress: () => switchAccount(a.id) })),
-    { label: 'Add Account…', onPress: () => void signIn().catch(fail) },
+    { label: 'Add Account…', onPress: () => void startSignIn(false) },
+    { label: 'Add Account with Google…', onPress: () => void startSignIn(true) },
     { label: 'Manage Accounts', onPress: () => go('SettingsPage', { page: 'accounts' }) }
   ])
 }
@@ -170,7 +172,7 @@ export function Account() {
       {account ? (
         <Profile key={account.id} name={account.username} own />
       ) : (
-        <Empty icon="person-circle-outline" title="Sign in to Reddit" text="Sign in on Reddit's own page. Apollo Delta uses that session, so you don't need an API key." action={<Button title="Sign In" icon="log-in-outline" onPress={() => void signIn().catch(fail)} />} />
+        <Empty icon="person-circle-outline" title="Sign in to Reddit" text="Sign in on Reddit's own page. Apollo Delta uses that session, so you don't need an API key." action={<SignInButtons />} />
       )}
     </Screen>
   )

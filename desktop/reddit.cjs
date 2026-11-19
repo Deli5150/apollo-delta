@@ -4,6 +4,7 @@
 // Which host answers which path is decided in the app (src/lib/reddit/routes.ts); this file only
 // signs in, keeps the sessions and sends requests.
 const { app, BrowserWindow, session } = require('electron')
+const browserSignIn = require('./browser-signin.cjs')
 const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
@@ -64,6 +65,20 @@ async function keepSession(ses) {
   }
 }
 
+/** Keeps a signed-in session as an account (replacing an older session of the same account). */
+async function addAccount(id, me) {
+  await keepSession(session.fromPartition(partition(id)))
+  const existing = accounts.find((a) => a.id === id || a.username.toLowerCase() === me.name.toLowerCase())
+  if (existing && existing.id !== id) {
+    await session.fromPartition(partition(existing.id)).clearStorageData().catch(() => {})
+    accounts = accounts.filter((a) => a.id !== existing.id)
+  }
+  const account = { id, username: me.name, modhash: me.modhash, icon: me.icon, addedAt: Date.now() }
+  accounts = [...accounts.filter((a) => a.id !== id), account]
+  save()
+  return publicAccount(account)
+}
+
 /**
  * Opens reddit.com's sign-in page in a window. Resolves with the account once Reddit says you're
  * signed in, or null if you close the window first. `reauth` signs an existing account in again.
@@ -89,17 +104,7 @@ function signIn(parent, reauthId) {
       done = true
       clearInterval(timer)
       if (me) {
-        await keepSession(ses)
-        const existing = accounts.find((a) => a.id === id || a.username.toLowerCase() === me.name.toLowerCase())
-        if (existing && existing.id !== id) {
-          // Already signed in to this account: keep the new session, drop the old one.
-          await session.fromPartition(partition(existing.id)).clearStorageData().catch(() => {})
-          accounts = accounts.filter((a) => a.id !== existing.id)
-        }
-        const account = { id, username: me.name, modhash: me.modhash, icon: me.icon, addedAt: Date.now() }
-        accounts = [...accounts.filter((a) => a.id !== id), account]
-        save()
-        resolve(publicAccount(account))
+        resolve(await addAccount(id, me))
       } else {
         if (!reauthId && !accounts.some((a) => a.id === id)) await ses.clearStorageData().catch(() => {})
         resolve(null)
@@ -128,6 +133,45 @@ function signIn(parent, reauthId) {
     }
     void start()
   })
+}
+
+/**
+ * Signs in through a real browser (Chrome, Edge, Brave…), where Google and Apple sign-in work,
+ * then moves the Reddit session into the account's own cookie store. Resolves with the account,
+ * or null if you closed the browser first.
+ */
+async function signInWithBrowser(reauthId) {
+  const id = reauthId || crypto.randomUUID()
+  const cookies = await browserSignIn.signIn(path.join(app.getPath('userData'), 'browser-signin'))
+  if (!cookies) return null
+  const ses = session.fromPartition(partition(id))
+  ses.setUserAgent(userAgent())
+  await ses.clearStorageData({ storages: ['cookies'] }).catch(() => {})
+  for (const c of cookies) {
+    const domain = c.domain
+    await ses.cookies
+      .set({
+        url: `https://${domain.replace(/^\./, '')}${c.path || '/'}`,
+        name: c.name,
+        value: c.value,
+        domain: domain.startsWith('.') ? domain : undefined,
+        path: c.path || '/',
+        secure: c.secure,
+        httpOnly: c.httpOnly,
+        sameSite: c.sameSite === 'Strict' ? 'strict' : c.sameSite === 'Lax' ? 'lax' : c.sameSite === 'None' ? 'no_restriction' : 'unspecified',
+        expirationDate: c.expires > 0 ? c.expires : undefined
+      })
+      .catch(() => {})
+  }
+  // Ask Reddit who this session is, as the account.
+  const headers = { 'User-Agent': userAgent(), Accept: 'application/json', Cookie: await cookieHeader(id) }
+  const res = await fetch('https://www.reddit.com/api/me.json?raw_json=1', { headers }).catch(() => null)
+  const d = res?.ok ? (await res.json().catch(() => null))?.data : null
+  if (!d?.name) {
+    if (!reauthId) await ses.clearStorageData().catch(() => {})
+    throw new Error("Reddit didn't confirm the sign-in. Try again, or use the in-app sign-in.")
+  }
+  return addAccount(id, { name: d.name, modhash: d.modhash || '', icon: d.icon_img || d.snoovatar_img || '' })
 }
 
 async function signOut(id) {
@@ -268,6 +312,9 @@ function setUp(ipcMain, getWindow) {
   app.userAgentFallback = userAgent()
   ipcMain.handle('reddit:accounts', () => accounts.map(publicAccount))
   ipcMain.handle('reddit:sign-in', (_e, reauthId) => signIn(getWindow(), reauthId))
+  ipcMain.handle('reddit:browser', () => browserSignIn.findBrowser()?.name ?? null)
+  ipcMain.handle('reddit:sign-in-browser', (_e, reauthId) => signInWithBrowser(reauthId))
+  ipcMain.handle('reddit:cancel-browser', () => browserSignIn.cancel())
   ipcMain.handle('reddit:sign-out', (_e, id) => signOut(id))
   ipcMain.handle('reddit:refresh', (_e, id) => refresh(id))
   ipcMain.handle('reddit:reorder', (_e, ids) => {
