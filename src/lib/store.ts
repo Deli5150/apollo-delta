@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { CommentSort, Post, Sort, TimeRange } from './reddit/types'
+import { switchTo, withActive, type ProfileData } from './profiles'
 import { loadData, saveData } from './storage'
 
 // Everything Apollo Delta remembers (not your Reddit account itself: that's the signed-in session).
@@ -97,6 +98,10 @@ export interface Data {
   subscriptionCache: Record<string, Array<{ name: string; icon?: string; nsfw?: boolean }>>
   lastSession?: { feed: string; post?: string }
   seenWhatsNew?: string
+  /** Each account's own settings, favorites, categories, history (profiles.ts). */
+  profiles: Record<string, ProfileData>
+  /** Whose profile the top-level values are: an account id, or "device" when signed out. */
+  activeProfile?: string
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -167,7 +172,8 @@ const EMPTY: Data = {
   visits: {},
   searches: [],
   currentAccount: null,
-  subscriptionCache: {}
+  subscriptionCache: {},
+  profiles: {}
 }
 
 interface Store extends Data {
@@ -176,6 +182,8 @@ interface Store extends Data {
   update(fn: (d: Data) => Partial<Data>): void
   set<K extends keyof Settings>(key: K, value: Settings[K]): void
   setSettings(patch: Partial<Settings>): void
+  /** Switches to an account's own settings (saving the current ones to the account before). */
+  switchProfile(id: string): void
 }
 
 let timer: ReturnType<typeof setTimeout> | null = null
@@ -183,8 +191,8 @@ let timer: ReturnType<typeof setTimeout> | null = null
 const persist = (get: () => Store) => {
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
-    const { loaded, hydrate, update, set, setSettings, ...data } = get()
-    void saveData(JSON.stringify(data))
+    const { loaded, hydrate, update, set, setSettings, switchProfile, ...data } = get()
+    void saveData(JSON.stringify(withActive(data)))
   }, 400)
 }
 
@@ -201,6 +209,7 @@ export function migrate(raw: Partial<Data> | null): Data {
     ...EMPTY,
     ...raw,
     settings: { ...DEFAULT_SETTINGS, ...raw.settings, filters: { ...DEFAULT_SETTINGS.filters, ...raw.settings?.filters } },
+    profiles: raw.profiles ?? {},
     read: trim(raw.read ?? {}, 4000),
     visits: trim(raw.visits ?? {}, 2000)
   } as Data
@@ -227,6 +236,12 @@ export const useStore = create<Store>((setState, get) => ({
   },
   setSettings(patch) {
     setState((s) => ({ settings: { ...s.settings, ...patch } }))
+    persist(get)
+  },
+  switchProfile(id) {
+    const patch = switchTo(get(), id, DEFAULT_SETTINGS, EMPTY)
+    if (!patch) return
+    setState(patch as Partial<Store>)
     persist(get)
   }
 }))

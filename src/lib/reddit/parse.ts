@@ -17,9 +17,10 @@ export function flair(text?: string | null, richtext?: Raw[] | null, bg?: string
     if (r.e === 'text' && r.t) parts.push({ t: 'text', v: decode(r.t) })
     else if (r.e === 'emoji' && r.u) parts.push({ t: 'emoji', url: r.u })
   }
-  const t = decode(text).trim()
+  // With rich text, the plain text has :emoji: placeholders where the pictures go.
+  const t = parts.length ? parts.filter((p) => p.t === 'text').map((p) => (p as { v: string }).v).join('').trim() : decode(text).trim()
   if (!t && !parts.length) return undefined
-  return { text: t || parts.filter((p) => p.t === 'text').map((p) => (p as { v: string }).v).join(''), bg: bg || undefined, color: color === 'light' ? 'light' : color === 'dark' ? 'dark' : undefined, parts: parts.length ? parts : undefined }
+  return { text: t, bg: bg || undefined, color: color === 'light' ? 'light' : color === 'dark' ? 'dark' : undefined, parts: parts.length ? parts : undefined }
 }
 
 function image(src?: Raw, resolutions?: Raw[]): MediaImage | undefined {

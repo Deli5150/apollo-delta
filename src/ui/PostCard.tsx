@@ -25,10 +25,22 @@ export function FlairPill({ flair, small }: { flair: Flair; small?: boolean }) {
   const fg = flair.bg && flair.bg !== 'transparent' ? (flair.color === 'dark' ? '#111' : '#fff') : colors.dim
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 5, backgroundColor: bg, maxWidth: 220 }}>
-      {flair.parts?.map((p, i) => (p.t === 'emoji' ? <Image key={i} source={{ uri: p.url }} style={{ width: 13, height: 13 }} /> : null))}
-      <Text numberOfLines={1} style={{ color: fg, fontSize: fs(small ? 10.5 : 11.5), fontWeight: '600', flexShrink: 1 }}>
-        {flair.text}
-      </Text>
+      {flair.parts?.length ? (
+        // Text and emoji in the order the flair has them.
+        flair.parts.map((p, i) =>
+          p.t === 'emoji' ? (
+            <Image key={i} source={{ uri: p.url }} style={{ width: small ? 13 : 15, height: small ? 13 : 15 }} contentFit="contain" />
+          ) : p.v.trim() ? (
+            <Text key={i} numberOfLines={1} style={{ color: fg, fontSize: fs(small ? 10.5 : 11.5), fontWeight: '600', flexShrink: 1 }}>
+              {p.v.trim()}
+            </Text>
+          ) : null
+        )
+      ) : (
+        <Text numberOfLines={1} style={{ color: fg, fontSize: fs(small ? 10.5 : 11.5), fontWeight: '600', flexShrink: 1 }}>
+          {flair.text}
+        </Text>
+      )}
     </View>
   )
 }

@@ -11,6 +11,7 @@ import { useTab, useWide, type TabKey } from './src/lib/layout'
 import { loadRouteUpdates } from './src/lib/reddit/routes'
 import { loadAccounts, refreshMe, useSession } from './src/lib/reddit/transport'
 import { desktop } from './src/lib/storage'
+import { SIGNED_OUT } from './src/lib/profiles'
 import { useStore } from './src/lib/store'
 import { autoCheck, startUpdater, useUpdate } from './src/lib/updater'
 import { nav, type RootParams } from './src/nav'
@@ -188,7 +189,10 @@ export default function App() {
 
   // Remember which account you used last.
   useEffect(() => {
-    if (sessionLoaded && useStore.getState().currentAccount !== current) useStore.getState().update(() => ({ currentAccount: current }))
+    if (!sessionLoaded) return
+    // Settings follow the account: load this account's own (src/lib/profiles.ts).
+    useStore.getState().switchProfile(current ?? SIGNED_OUT)
+    if (useStore.getState().currentAccount !== current) useStore.getState().update(() => ({ currentAccount: current }))
     if (current) void loadSubs()
   }, [current, sessionLoaded])
 

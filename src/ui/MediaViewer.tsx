@@ -159,7 +159,7 @@ export function MediaViewerHost() {
             transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [panelW * 0.25, 0] }) }]
           }}
         >
-          <ThreadView key={post.name} id={post.id} initial={post} embedded onClose={() => setComments(false)} />
+          <ThreadView key={post.name} id={post.id} initial={post} embedded hideMedia onClose={() => setComments(false)} />
         </Animated.View>
       )}
       </View>

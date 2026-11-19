@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useShallow } from 'zustand/react/shallow'
 import { CHANGELOG } from '../data/changelog'
@@ -84,7 +84,7 @@ export default function Settings() {
   ]
   return (
     <Screen>
-      <Header showBack={false} title="Settings" />
+      <Header showBack={false} title="Settings" subtitle={account ? `Saved to u/${account.username}` : 'Signed out'} />
       <Page>
         <Group>
           <Rows>
@@ -121,10 +121,14 @@ function Accounts() {
   const { accounts, current, expired } = useSession(useShallow((s) => ({ accounts: s.accounts, current: s.current, expired: s.expired })))
   const [busy, setBusy] = useState(false)
   const browser = useSignInBrowser()
+  const [remembered, setRemembered] = useState(false)
+  const checkRemembered = () => void desktop?.reddit.browserRemembered().then(setRemembered)
+  useEffect(checkRemembered, [])
   const add = async (reauth?: string, google = false) => {
     setBusy(!google)
     await startSignIn(google, reauth)
     setBusy(false)
+    checkRemembered()
   }
   return (
     <Page>
@@ -135,7 +139,7 @@ function Accounts() {
       )}
       <Group
         title="Accounts"
-        footer={`Apollo Delta has no API key. You sign in on Reddit's own page, and the app reads Reddit with that session, the way your browser does. Your password never passes through Apollo Delta.${browser ? ` Google won't sign in inside apps, so Sign in with Google opens Reddit's page in ${browser}, with a separate profile that's deleted afterwards.` : ''}`}
+        footer={`Apollo Delta has no API key. You sign in on Reddit's own page, and the app reads Reddit with that session, the way your browser does. Your password never passes through Apollo Delta.${browser ? ` Google won't sign in inside apps, so Sign in with Google opens Reddit's page in a separate ${browser} window (not your own ${browser} profile).` : ''}`}
       >
         <Rows>
           {[
@@ -158,7 +162,17 @@ function Accounts() {
               />
             )),
             <Row key="add" icon="add" iconColor={colors.accent} title={busy ? 'Waiting for Reddit…' : 'Add Account'} sub={busy ? 'Finish signing in in the Reddit window.' : 'Sign in with your Reddit username and password.'} onPress={() => void add()} />,
-            browser ? <Row key="google" icon="logo-google" iconColor="#4285f4" title="Sign in with Google" sub={`Opens Reddit's sign-in in ${browser}, where Google and Apple sign-in work.`} onPress={() => void add(undefined, true)} /> : null
+            browser ? <Row key="google" icon="logo-google" iconColor="#4285f4" title="Sign in with Google" sub={`Opens Reddit's sign-in in ${browser}, where Google and Apple sign-in work.`} onPress={() => void add(undefined, true)} /> : null,
+            remembered ? (
+              <Row
+                key="forget"
+                title="Forget Google Sign-In"
+                sub={`The ${browser} window remembers your Google account so the next sign-in is one click.`}
+                destructive
+                chevron={false}
+                onPress={() => confirm('Forget Google sign-in?', `Signs Google out of Apollo Delta's ${browser} window. Your Reddit accounts here stay signed in.`, 'Forget', () => void desktop?.reddit.forgetBrowser().then(() => (setRemembered(false), toast('Forgotten'))))}
+              />
+            ) : null
           ]}
         </Rows>
       </Group>
@@ -601,7 +615,7 @@ function UpdatesPage() {
   const [auto, setAuto] = useSetting('checkUpdates')
   return (
     <Page>
-      <Group>
+      <Group footer="Update settings are the same on every account; everything else in Settings is kept for each account.">
         <Rows>
           {[
             <Row key="v" title="Current Version" value={VERSION} chevron={false} />,

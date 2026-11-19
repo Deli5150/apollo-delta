@@ -4,10 +4,18 @@
 // away from a browser that's being remote-controlled. Once Reddit's session cookie lands in that
 // profile's cookie file (Chrome writes cookies about every 30 seconds), the window is closed, the
 // browser is reopened hidden with its DevTools port on, and it hands over the decrypted cookies.
-// The profile is deleted afterwards.
+//
+// The profile is kept between sign-ins (Settings → Accounts → Forget Google Sign-In deletes it):
+// Reddit then knows the browser and skips its "Prove your humanity" check, and Google remembers
+// you, so signing in is one click on your account. Reddit's own sign-in cookies are taken out of
+// it before each sign-in (so Reddit asks which account) and after (the app keeps its own copy).
 const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
+const { DatabaseSync } = require('node:sqlite')
+
+/** Reddit's sign-in cookies: removed from the profile around each sign-in. Others (loid…) stay. */
+const SESSION_COOKIES = ['reddit_session', 'token_v2', 'session_tracker', 'csrf_token']
 
 /** Chromium browsers that take --user-data-dir, by platform, in order of preference. */
 function candidates() {
@@ -47,17 +55,72 @@ function findBrowser() {
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 
-/** Whether the profile's cookie file has a Reddit session in it (cookie names are stored as plain text). */
+const cookieFile = (dir) => [path.join(dir, 'Default', 'Network', 'Cookies'), path.join(dir, 'Default', 'Cookies')].find((f) => fs.existsSync(f))
+
+/** Whether the profile's cookie database has a Reddit session (names aren't encrypted; values are). */
 function hasSession(dir) {
-  for (const f of ['Cookies', 'Cookies-journal', 'Cookies-wal']) {
-    for (const sub of ['Default', path.join('Default', 'Network')]) {
-      try {
-        if (fs.readFileSync(path.join(dir, sub, f)).includes('reddit_session')) return true
-      } catch {}
+  const file = cookieFile(dir)
+  if (!file) return false
+  // Read a copy: the browser keeps the real one open.
+  const copy = path.join(dir, 'cookies-check.db')
+  try {
+    fs.copyFileSync(file, copy)
+    const db = new DatabaseSync(copy, { readOnly: true })
+    try {
+      return db.prepare("SELECT COUNT(*) AS n FROM cookies WHERE name = 'reddit_session' AND host_key LIKE '%reddit.com'").get().n > 0
+    } finally {
+      db.close()
     }
+  } catch {
+    return false
+  } finally {
+    fs.rmSync(copy, { force: true })
   }
-  return false
 }
+
+/** Takes Reddit's sign-in cookies out of the profile (only while its browser is closed). */
+function clearRedditSession(dir) {
+  const file = cookieFile(dir)
+  if (!file) return
+  try {
+    const db = new DatabaseSync(file)
+    try {
+      db.prepare(`DELETE FROM cookies WHERE host_key LIKE '%reddit.com' AND name IN (${SESSION_COOKIES.map(() => '?').join(',')})`).run(...SESSION_COOKIES)
+    } finally {
+      db.close()
+    }
+  } catch {}
+}
+
+/**
+ * A new profile starts with Chrome's own prompts already answered: no "Sign in to Chrome?" (web
+ * sign-in to Google still works), no welcome page, no ad-privacy notice, no offer to save passwords.
+ */
+function prepareProfile(dir) {
+  const prefs = path.join(dir, 'Default', 'Preferences')
+  if (fs.existsSync(prefs)) return
+  fs.mkdirSync(path.dirname(prefs), { recursive: true })
+  fs.writeFileSync(
+    prefs,
+    JSON.stringify({
+      signin: { allowed: false, allowed_on_next_startup: false },
+      browser: { has_seen_welcome_page: true, check_default_browser: false },
+      privacy_sandbox: { m1: { consent_decision_made: true, eea_notice_acknowledged: true, row_notice_acknowledged: true, topics_enabled: false, fledge_enabled: false, ad_measurement_enabled: false } },
+      credentials_enable_service: false,
+      autofill: { profile_enabled: false, credit_card_enabled: false },
+      search: { suggest_enabled: false }
+    })
+  )
+}
+
+/** Forgets the sign-in browser's profile (your Google sign-in in it). */
+function forget(dir) {
+  cancel()
+  fs.rmSync(dir, { recursive: true, force: true })
+}
+
+/** Whether the sign-in browser has a profile (so there's a Google sign-in to forget). */
+const hasProfile = (dir) => fs.existsSync(path.join(dir, 'Default'))
 
 function stop(child) {
   return new Promise((resolve) => {
@@ -133,11 +196,19 @@ function cancel() {
 async function signIn(dir) {
   const browser = findBrowser()
   if (!browser) throw new Error('Signing in with Google needs Chrome, Edge or Brave installed.')
-  if (current) cancel()
-  // A fresh profile every time, so Reddit asks who you are.
-  fs.rmSync(dir, { recursive: true, force: true })
+  if (current) {
+    cancel()
+    await wait(500)
+  }
   fs.mkdirSync(dir, { recursive: true })
-  const child = spawn(browser.exe, [`--user-data-dir=${dir}`, '--no-first-run', '--no-default-browser-check', '--disable-sync', '--window-size=520,760', '--app=https://www.reddit.com/login/'], { stdio: 'ignore' })
+  prepareProfile(dir)
+  // So Reddit asks which account, instead of carrying on as the last one.
+  clearRedditSession(dir)
+  const child = spawn(
+    browser.exe,
+    [`--user-data-dir=${dir}`, '--no-first-run', '--no-default-browser-check', '--disable-sync', '--disable-search-engine-choice-screen', '--disable-features=SigninInterceptBubble,ChromeWhatsNewUI,PrivacySandboxSettings4', '--window-size=520,760', '--app=https://www.reddit.com/login/'],
+    { stdio: 'ignore' }
+  )
   const run = { child, cancelled: false }
   current = run
   let exited = false
@@ -162,10 +233,10 @@ async function signIn(dir) {
   } finally {
     await stop(child)
     if (current === run) current = null
-    // Leave nothing behind: the profile holds your Google and Reddit sign-ins.
+    // The app has its own copy of the session now; the browser profile keeps only your Google sign-in.
     await wait(300)
-    fs.rmSync(dir, { recursive: true, force: true })
+    clearRedditSession(dir)
   }
 }
 
-module.exports = { findBrowser, signIn, cancel }
+module.exports = { findBrowser, signIn, cancel, forget, hasProfile }

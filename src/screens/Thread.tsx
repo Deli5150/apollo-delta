@@ -154,7 +154,7 @@ function CommentRow({ row, isNew, avatar, op, onToggle, postId }: { row: Extract
   )
 }
 
-function PostHeader({ post: p0, width, commentSort, onSort }: { post: Post; width: number; commentSort: CommentSort; onSort: () => void }) {
+function PostHeader({ post: p0, width, commentSort, onSort, hideMedia }: { post: Post; width: number; commentSort: CommentSort; onSort: () => void; hideMedia?: boolean }) {
   const p = usePatched(p0)
   const settings = useStore((s) => s.settings)
   const translated = useTranslations((x) => (x.shown[p.name] ? x.byName[p.name] : undefined))
@@ -187,7 +187,7 @@ function PostHeader({ post: p0, width, commentSort, onSort }: { post: Post; widt
           {!p.isSelf && <Text style={{ color: colors.faint, fontSize: fs(13) }}>· {p.domain}</Text>}
         </View>
       </View>
-      {hasMedia(p) && (
+      {hasMedia(p) && !hideMedia && (
         <View style={{ marginBottom: 12 }}>
           <PostMedia post={p} width={width} maxHeight={900} autoplay={settings.autoplay} muted={settings.mutedVideos} blurNsfw={cover.nsfw} blurSpoiler={cover.spoiler} richLinks={settings.richLinks} onLink={(u) => void openUrl(u)} full />
         </View>
@@ -247,9 +247,11 @@ export interface ThreadViewProps {
   /** In the three-pane layout: no back button, a close button instead. */
   embedded?: boolean
   onClose?: () => void
+  /** Leave out the post's picture or video (shown beside it already). */
+  hideMedia?: boolean
 }
 
-export function ThreadView({ id, focus: focus0, initial, embedded, onClose }: ThreadViewProps) {
+export function ThreadView({ id, focus: focus0, initial, embedded, onClose, hideMedia }: ThreadViewProps) {
   const settings = useStore(useShallow((s) => ({ sort: s.settings.defaultCommentSort, autoCollapse: s.settings.autoCollapsePinned, collapseChildren: s.settings.collapseChildren, highlight: s.settings.highlightNewComments, jump: s.settings.jumpButton, showJump: s.settings.showJumpButton, avatars: s.settings.showUserAvatars })))
   const [post, setPost] = useState<Post | undefined>(initial)
   const [comments, setComments] = useState<Node[] | null>(null)
@@ -408,7 +410,7 @@ export function ThreadView({ id, focus: focus0, initial, embedded, onClose }: Th
           keyExtractor={(r) => r.key}
           ListHeaderComponent={
             <View>
-              <PostHeader post={post} width={width} commentSort={sort} onSort={sortMenu} />
+              <PostHeader post={post} width={width} commentSort={sort} onSort={sortMenu} hideMedia={hideMedia} />
               {focus && (
                 <Pressable onPress={() => setFocus(undefined)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: 12, backgroundColor: colors.accentSoft, marginTop: 8 }}>
                   <Ionicons name="chatbubbles" size={15} color={colors.accentHi} />

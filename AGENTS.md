@@ -20,7 +20,14 @@ stack, updater and release tooling.
   `--user-data-dir` on reddit.com/login (`--app`), poll its Cookies file for the plain-text name
   `reddit_session` (only set when signed in; Chrome flushes ~30s), kill it, relaunch `--headless=new
   --remote-debugging-port=0` on the same profile, `Storage.getCookies`, import into the account's
-  partition, verify with /api/me.json, delete the profile.
+  partition, verify with /api/me.json. The profile is kept (so Reddit skips its captcha and Google
+  remembers you); Reddit's session cookies are deleted from its SQLite DB (node:sqlite, browser
+  closed) before and after each sign-in; Preferences are pre-written to silence Chrome's prompts.
+  An "official" Google sign-in isn't possible: Reddit only accepts Google sign-ins for its own
+  Google client, and using that client would be impersonating Reddit.
+- Settings follow the account (`src/lib/profiles.ts`, user's request): `profiles[accountId]` holds
+  settings, favorites, saved categories, recently read/visited, searches ("device" when signed out);
+  top-level store fields are the active profile. Updater and route settings are device-wide.
 - Routes (`src/lib/reddit/routes.ts`): some paths are blocked on www for web sessions but served by
   oauth/old/api with the same cookie (hot/new/rising, r/all, search, /api/info, morechildren). Each
   pattern lists hosts in order; a block page tries the next; 3 in a row cools a host down. `routes.json`

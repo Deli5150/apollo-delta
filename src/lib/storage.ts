@@ -66,6 +66,9 @@ export interface DesktopBridge {
     browser(): Promise<string | null>
     signInWithBrowser(reauthId?: string): Promise<AccountInfo | null>
     cancelBrowser(): Promise<void>
+    /** Whether the sign-in browser remembers a Google sign-in. */
+    browserRemembered(): Promise<boolean>
+    forgetBrowser(): Promise<void>
     signOut(id: string): Promise<void>
     refresh(id: string): Promise<(AccountInfo & { expired?: boolean; me?: any }) | null>
     reorder(ids: string[]): Promise<void>

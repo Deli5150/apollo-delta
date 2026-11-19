@@ -317,6 +317,8 @@ function setUp(ipcMain, getWindow) {
   ipcMain.handle('reddit:browser', () => browserSignIn.findBrowser()?.name ?? null)
   ipcMain.handle('reddit:sign-in-browser', (_e, reauthId) => signInWithBrowser(reauthId))
   ipcMain.handle('reddit:cancel-browser', () => browserSignIn.cancel())
+  ipcMain.handle('reddit:browser-remembered', () => browserSignIn.hasProfile(path.join(app.getPath('userData'), 'browser-signin')))
+  ipcMain.handle('reddit:forget-browser', () => browserSignIn.forget(path.join(app.getPath('userData'), 'browser-signin')))
   ipcMain.handle('reddit:sign-out', (_e, id) => signOut(id))
   ipcMain.handle('reddit:refresh', (_e, id) => refresh(id))
   ipcMain.handle('reddit:reorder', (_e, ids) => {
