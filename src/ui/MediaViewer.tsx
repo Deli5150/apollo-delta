@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { useEffect, useState } from 'react'
-import { Modal, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { Animated, Easing, Modal, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native'
 import { compact } from '../lib/format'
 import { desktop } from '../lib/storage'
-import { go } from '../nav'
+import { go, nav } from '../nav'
+import { ThreadView } from '../screens/Thread'
 import { copy, fail } from './actions'
 import type { Post } from '../lib/reddit/types'
 import { useViewer, viewerItems, type ViewerItem } from './media'
@@ -13,7 +14,8 @@ import { toast } from './toast'
 import { Video } from './Video'
 
 // The full-screen media viewer: pictures (click to zoom), galleries (arrow keys / buttons),
-// videos with controls; save, copy, open the post's comments.
+// videos with controls; save, copy, open the post's comments (from Gallery View, in a panel at the
+// right that follows the arrow keys from post to post).
 
 export function MediaViewerHost() {
   const open = useViewer((s) => s.open)
@@ -21,11 +23,20 @@ export function MediaViewerHost() {
   // What's showing: a post's items (and which), which can change as you step through a sequence.
   const [view, setView] = useState<{ items: ViewerItem[]; index: number; post?: Post }>({ items: [], index: 0 })
   const [zoom, setZoom] = useState(false)
+  // Gallery View: the post's comments in a panel at the right, which follows the post you're on.
+  const [comments, setComments] = useState(false)
+  const slide = useRef(new Animated.Value(0)).current
   useEffect(() => {
     if (open) setView({ items: open.items, index: open.index, post: open.post })
+    else setComments(false)
     setZoom(false)
   }, [open])
+  useEffect(() => {
+    Animated.timing(slide, { toValue: comments ? 1 : 0, duration: 200, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== 'web' }).start()
+  }, [comments, slide])
   const close = () => useViewer.setState({ open: null })
+  // Going somewhere from the comments (a profile, a reply, a subreddit) leaves the viewer.
+  useEffect(() => (open ? nav.addListener('state', close) : undefined), [open])
   const { items, index, post } = view
   const item = items[index]
   const sequence = open?.sequence
@@ -63,7 +74,7 @@ export function MediaViewerHost() {
   useEffect(() => {
     if (!open || Platform.OS !== 'web') return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
+      if (e.key === 'Escape') (comments ? setComments(false) : close())
       else if (e.key === 'ArrowRight') (e.preventDefault(), go2(1))
       else if (e.key === 'ArrowLeft') (e.preventDefault(), go2(-1))
     }
@@ -72,17 +83,25 @@ export function MediaViewerHost() {
   })
   if (!open || !item) return null
   const url = item.kind === 'image' ? item.url : (item.mp4 ?? item.hls ?? '')
+  // Wide windows: the comments sit beside the picture. Narrow ones: over it, full width.
+  const besides = width >= 900
+  const panelW = besides ? Math.min(480, Math.round(width * 0.4)) : width
+  const panelOpen = comments && Boolean(post)
+  const stageW = panelOpen && besides ? width - panelW : width
+  const inGallery = Boolean(open.sequence)
+  const openComments = () => (inGallery ? setComments((c) => !c) : post && (close(), go('Thread', { id: post.id, post })))
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={close}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.94)' }}>
+    <Modal visible transparent animationType="fade" onRequestClose={() => (comments ? setComments(false) : close())}>
+      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.94)' }}>
+      <View style={{ width: stageW, height }}>
         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
         <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: zoom ? 0 : 40 }}>
           {item.kind === 'image' ? (
-            <Pressable onPress={() => setZoom((z) => !z)} style={{ width: zoom ? width : width - 80, height: zoom ? height : height - 140, ...(Platform.OS === 'web' ? ({ cursor: zoom ? 'zoom-out' : 'zoom-in' } as object) : {}) }}>
+            <Pressable onPress={() => setZoom((z) => !z)} style={{ width: zoom ? stageW : stageW - 80, height: zoom ? height : height - 140, ...(Platform.OS === 'web' ? ({ cursor: zoom ? 'zoom-out' : 'zoom-in' } as object) : {}) }}>
               <Image source={{ uri: item.url }} style={{ width: '100%', height: '100%' }} contentFit={zoom ? 'cover' : 'contain'} transition={100} />
             </Pressable>
           ) : (
-            <View style={{ width: width - 80, height: height - 140 }}>
+            <View style={{ width: stageW - 80, height: height - 140 }}>
               <Video hls={item.hls} mp4={item.mp4} poster={item.poster} autoPlay muted={false} loop controls />
             </View>
           )}
@@ -105,10 +124,11 @@ export function MediaViewerHost() {
           {desktop && <Tool icon="download-outline" label="Save" onPress={() => void desktop!.saveMedia(url).then(() => toast('Saved to Downloads')).catch(fail)} />}
           {desktop && item.kind === 'image' && <Tool icon="copy-outline" label="Copy Image" onPress={() => (desktop!.copyImage(url), toast('Image copied'))} />}
           <Tool icon="link-outline" label="Copy Link" onPress={() => void copy(url)} />
+          {inGallery && post && <Tool icon={comments ? 'chatbubbles' : 'chatbubbles-outline'} label={comments ? 'Hide Comments' : 'Show Comments'} onPress={openComments} />}
           <Tool icon="close" label="Close" onPress={close} />
         </View>
         {post && (
-          <Pressable key={post.name} onPress={() => (close(), go('Thread', { id: post.id, post }))} style={{ position: 'absolute', bottom: 14, left: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(30,30,36,0.85)', maxWidth: 720, alignSelf: 'center' }}>
+          <Pressable key={post.name} onPress={openComments} style={{ position: 'absolute', bottom: 14, left: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(30,30,36,0.85)', maxWidth: 720, alignSelf: 'center' }}>
             <View style={{ flex: 1 }}>
               <Text numberOfLines={1} style={{ color: '#fff', fontWeight: '700' }}>
                 {post.title}
@@ -117,9 +137,31 @@ export function MediaViewerHost() {
                 r/{post.subreddit} · ↑ {compact(post.score)} · {compact(post.numComments)} comments
               </Text>
             </View>
-            <Ionicons name="chatbubbles-outline" size={20} color={colors.accentHi} />
+            <Ionicons name={panelOpen ? 'chevron-forward' : 'chatbubbles-outline'} size={20} color={colors.accentHi} />
           </Pressable>
         )}
+      </View>
+      {panelOpen && post && (
+        <Animated.View
+          style={{
+            position: besides ? 'relative' : 'absolute',
+            right: 0,
+            top: 0,
+            width: panelW,
+            height,
+            backgroundColor: colors.bg,
+            borderLeftWidth: 1,
+            borderColor: colors.separator,
+            shadowColor: '#000',
+            shadowOpacity: 0.4,
+            shadowRadius: 20,
+            opacity: slide,
+            transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [panelW * 0.25, 0] }) }]
+          }}
+        >
+          <ThreadView key={post.name} id={post.id} initial={post} embedded onClose={() => setComments(false)} />
+        </Animated.View>
+      )}
       </View>
     </Modal>
   )
