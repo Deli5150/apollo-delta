@@ -55,8 +55,9 @@ stack, updater and release tooling.
   focused, in the visible tab and with no viewer open (`useMayPlay` in media.tsx).
 - Emulator testing: `adb root`, then two-finger pinches via sendevent on /dev/input/event1 (MT
   slots; tracking id -1 to lift). The emulator renders slowly (~44 ms median frames even on
-  Settings), so judge performance changes relative to that, not absolutely. Build: `npx expo prebuild -p android --clean`, local.properties
-  sdk.dir, JAVA_HOME=openjdk@17, `./gradlew assembleRelease` (plugins/withGradleMemory raises
+  Settings), so judge performance changes relative to that, not absolutely.
+- Android build: `npx expo prebuild -p android --clean` (then `npm install` re-applies patches/),
+  local.properties sdk.dir, JAVA_HOME=openjdk@17, `./gradlew assembleRelease` (plugins/withGradleMemory raises
   memory). Release key credentials/delta-release.keystore alias delta, DELTA_RELEASE_* in
   ~/.gradle/gradle.properties, SHA-1 DE:DE:C0:99:B8:DA:4E:92:06:3B:D1:64:39:08:66:85:46:65:CC:49.
 
