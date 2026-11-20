@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useDockSpace } from '../lib/layout'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Image } from 'expo-image'
 import { useEffect, useMemo, useState } from 'react'
@@ -229,6 +230,7 @@ export function SavedScreen({ route }: NativeStackScreenProps<RootParams, 'Saved
 }
 
 export function RecentlyRead() {
+  const dock = useDockSpace()
   const recent = useStore((s) => s.recentlyRead)
   const [width, setWidth] = useState(600)
   const posts = useMemo(
@@ -256,6 +258,7 @@ export function RecentlyRead() {
       <View style={{ flex: 1 }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         <FlatList
           data={posts}
+          contentContainerStyle={{ paddingBottom: dock }}
           keyExtractor={(p) => p.name}
           renderItem={({ item }) => (
             <View style={{ maxWidth: 860, width: '100%', alignSelf: 'center' }}>

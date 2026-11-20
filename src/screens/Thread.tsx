@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useDockSpace } from '../lib/layout'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, Text, View, type LayoutChangeEvent } from 'react-native'
 import { useShallow } from 'zustand/react/shallow'
@@ -267,6 +268,7 @@ export function ThreadView({ id, focus: focus0, initial, embedded, onClose, hide
   const lastVisit = useRef<number | undefined>(useStore.getState().visits[id.replace(/^t3_/, '')])
   const firstVisible = useRef(0)
   const list = useRef<FlatList<Row>>(null)
+  const dock = useDockSpace()
   const pid = id.replace(/^t3_/, '')
   const newReplies = useNewReplies((s) => s.byPost[pid])
   const applied = useRef(0)
@@ -430,7 +432,7 @@ export function ThreadView({ id, focus: focus0, initial, embedded, onClose, hide
             )
           }
           ListEmptyComponent={comments === null ? (error ? <ErrorView error={error} onRetry={() => void load()} /> : <Loading />) : <Empty icon="chatbubble-outline" title="No comments yet" text="Be the first to reply." />}
-          ListFooterComponent={<View style={{ height: 90 }} />}
+          ListFooterComponent={<View style={{ height: 90 + dock }} />}
           onViewableItemsChanged={onViewable}
           viewabilityConfig={{ itemVisiblePercentThreshold: 10 }}
           onScrollToIndexFailed={(info) => list.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true })}
@@ -444,7 +446,7 @@ export function ThreadView({ id, focus: focus0, initial, embedded, onClose, hide
           onPress={() => jump(1)}
           onLongPress={() => jump(-1)}
           accessibilityLabel={jumpMode === 'new' ? 'Next new comment' : 'Next thread'}
-          style={({ hovered }: any) => ({ position: 'absolute', right: 18, bottom: 22, width: 46, height: 46, borderRadius: 23, backgroundColor: hovered ? colors.accentHi : colors.accent, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } })}
+          style={({ hovered }: any) => ({ position: 'absolute', right: 18, bottom: 22 + dock, width: 46, height: 46, borderRadius: 23, backgroundColor: hovered ? colors.accentHi : colors.accent, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } })}
         >
           <Ionicons name="chevron-down" size={24} color={colors.onAccent} />
           {jumpMode === 'new' && <Text style={{ position: 'absolute', bottom: 3, color: colors.onAccent, fontSize: 8, fontWeight: '900' }}>NEW</Text>}

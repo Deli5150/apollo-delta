@@ -1,13 +1,14 @@
 import { DarkTheme, DefaultTheme, NavigationContainer, StackActions, type NavigationState } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { BlurTargetView } from 'expo-blur'
 import { StatusBar } from 'expo-status-bar'
-import { memo, useEffect, useRef } from 'react'
+import { memo, useEffect, useRef, type ComponentRef } from 'react'
 import { ActivityIndicator, AppState, Platform, useColorScheme, View } from 'react-native'
 import { Freeze } from 'react-freeze'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useShallow } from 'zustand/react/shallow'
 import { loadSubs } from './src/lib/feeds'
-import { useTab, useWide, type TabKey } from './src/lib/layout'
+import { useKeyboard, useTab, useWide, type TabKey } from './src/lib/layout'
 import { loadRouteUpdates } from './src/lib/reddit/routes'
 import { loadAccounts, refreshMe, useSession } from './src/lib/reddit/transport'
 import { desktop } from './src/lib/storage'
@@ -29,7 +30,8 @@ import { MediaViewerHost } from './src/ui/MediaViewer'
 import { OverlayHost } from './src/ui/overlays'
 import { BrowserSignInHost } from './src/ui/SignIn'
 import { WebSignInHost } from './src/ui/WebSignIn'
-import { Rail, TabBar, TABS } from './src/ui/TabBar'
+import { useViewer } from './src/ui/media'
+import { Dock, Rail, TABS } from './src/ui/TabBar'
 import { applyTheme, colors, setTextScale, themeKey } from './src/ui/theme'
 import { ToastHost } from './src/ui/toast'
 import { UpdatePrompt, useUpdatePrompt } from './src/ui/UpdatePrompt'
@@ -69,32 +71,44 @@ function TabPane({ active, k }: { active: boolean; k: TabKey }) {
 }
 
 function Tabs() {
-  const { tab, set } = useTab()
-  const wide = useWide()
+  const tab = useTab((s) => s.tab)
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {TABS.map((t) => (
         <TabPane key={t.key} k={t.key} active={tab === t.key} />
       ))}
-      {!wide && <TabBar tab={tab} onChange={set} />}
     </View>
   )
 }
 
-/** Desktop: the tab rail beside everything. Picking a tab also closes pages opened on top. */
+/** Picking a tab also closes the pages opened on top, back to the tab itself. */
+function pickTab(t: TabKey) {
+  useTab.getState().set(t)
+  if (nav.isReady() && nav.canGoBack()) nav.dispatch(StackActions.popToTop())
+}
+
+/**
+ * The tabs around everything: a rail beside it on desktop; on phones a floating dock over every
+ * page (it frosts what's behind it), set aside while a picture or video is open or you're typing.
+ */
 function Shell({ children }: { children: React.ReactNode }) {
   const wide = useWide()
   const tab = useTab((s) => s.tab)
-  if (!wide) return <>{children}</>
+  const viewing = useViewer((s) => Boolean(s.open))
+  const typing = useKeyboard((s) => s.shown)
+  const behind = useRef<ComponentRef<typeof View>>(null)
+  if (!wide)
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <BlurTargetView ref={behind} style={{ flex: 1 }}>
+          {children}
+        </BlurTargetView>
+        {!viewing && !typing && <Dock tab={tab} onChange={pickTab} blurTarget={behind} />}
+      </View>
+    )
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: colors.bg }}>
-      <Rail
-        tab={tab}
-        onChange={(t) => {
-          useTab.getState().set(t)
-          if (nav.isReady() && nav.canGoBack()) nav.dispatch(StackActions.popToTop())
-        }}
-      />
+      <Rail tab={tab} onChange={pickTab} />
       <View style={{ flex: 1 }}>{children}</View>
     </View>
   )
@@ -134,8 +148,7 @@ function Shortcuts() {
       const n = Number(e.key)
       if (n >= 1 && n <= TABS.length) {
         e.preventDefault()
-        useTab.getState().set(TABS[n - 1].key)
-        if (nav.isReady() && nav.canGoBack()) nav.dispatch(StackActions.popToTop())
+        pickTab(TABS[n - 1].key)
       } else if (e.key === 'f') {
         e.preventDefault()
         useTab.getState().set('search')

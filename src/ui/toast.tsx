@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Animated, Platform, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { create } from 'zustand'
-import { useWide } from '../lib/layout'
+import { useWide, useDockSpace } from '../lib/layout'
 import { colors } from './theme'
 
 // A short message at the bottom of the window, optionally with an Undo button.
@@ -28,6 +28,7 @@ export function ToastHost() {
   const t = useToast((s) => s.toast)
   const insets = useSafeAreaInsets()
   const wide = useWide()
+  const dock = useDockSpace()
   const y = useRef(new Animated.Value(0)).current
   useEffect(() => {
     y.setValue(t ? 0 : 1)
@@ -35,7 +36,7 @@ export function ToastHost() {
   }, [t?.id, y])
   if (!t) return null
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: wide ? 24 : insets.bottom + 92, alignItems: 'center' }}>
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: wide ? 24 : Math.max(insets.bottom + 20, dock + 8), alignItems: 'center' }}>
       <Animated.View
         style={{
           flexDirection: 'row',

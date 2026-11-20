@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useDockSpace } from '../lib/layout'
 import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useShallow } from 'zustand/react/shallow'
@@ -33,6 +34,7 @@ function SubRow({ sr, onPress }: { sr: Subreddit; onPress: () => void }) {
 }
 
 export function SearchView({ scope }: { scope?: string }) {
+  const dock = useDockSpace()
   const account = useSession((s) => s.current)
   const { searches, recentlyVisited, limit, nsfw } = useStore(useShallow((s) => ({ searches: s.searches, recentlyVisited: s.recentlyVisited, limit: s.settings.recentlyVisitedLimit, nsfw: s.settings.showNsfw })))
   const [q, setQ] = useState('')
@@ -143,7 +145,7 @@ export function SearchView({ scope }: { scope?: string }) {
           )}
         </View>
       ) : (
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40, maxWidth: 860, width: '100%', alignSelf: 'center' }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 + dock, maxWidth: 860, width: '100%', alignSelf: 'center' }}>
           {q.trim() ? (
             <>
               <Pressable onPress={() => submit()} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>

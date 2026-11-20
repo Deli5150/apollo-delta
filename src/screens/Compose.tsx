@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useDockSpace } from '../lib/layout'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
@@ -72,6 +73,7 @@ function FlairPicker({ flairs, selected, onPick }: { flairs: api.LinkFlair[]; se
 }
 
 export default function Compose({ route }: NativeStackScreenProps<RootParams, 'Compose'>) {
+  const dock = useDockSpace()
   const p = route.params
   const [text, setText] = useState(p.mode === 'edit' ? p.text : p.mode === 'reply' && p.quote ? `> ${p.quote}\n\n` : '')
   const [title, setTitle] = useState('')
@@ -160,7 +162,7 @@ export default function Compose({ route }: NativeStackScreenProps<RootParams, 'C
   return (
     <Screen>
       <Header title={heading} right={<Button title={p.mode === 'edit' ? 'Save' : p.mode === 'post' ? 'Post' : 'Send'} onPress={() => void send()} disabled={!ready} loading={sending} style={{ height: 34, marginRight: 6 }} />} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1, paddingBottom: dock }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 14, gap: 10, maxWidth: 860, width: '100%', alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
           {p.mode === 'message' && (
             <>

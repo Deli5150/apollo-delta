@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { useDockSpace } from '../lib/layout'
 import { useEffect, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 import { compact, shortDate } from '../lib/format'
@@ -14,6 +15,7 @@ import { SubredditHeader } from './Feed'
 // A subreddit's sidebar: description, rules, moderators, and its Tag Filter exceptions.
 
 export default function About({ route }: NativeStackScreenProps<RootParams, 'About'>) {
+  const dock = useDockSpace()
   const name = route.params.sr
   const [sr, setSr] = useState<Subreddit | null>(null)
   const [rules, setRules] = useState<Array<{ title: string; description: string }>>([])
@@ -41,7 +43,7 @@ export default function About({ route }: NativeStackScreenProps<RootParams, 'Abo
       ) : !sr ? (
         <Loading />
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 40, maxWidth: 860, width: '100%', alignSelf: 'center' }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 + dock, maxWidth: 860, width: '100%', alignSelf: 'center' }}>
           <SubredditHeader sr={sr} onAbout={() => {}} />
           <View style={{ paddingHorizontal: 14 }}>
             <Text style={{ color: colors.dim, fontSize: fs(13) }}>
@@ -97,6 +99,7 @@ export default function About({ route }: NativeStackScreenProps<RootParams, 'Abo
 }
 
 export function Wiki({ route }: NativeStackScreenProps<RootParams, 'Wiki'>) {
+  const dock = useDockSpace()
   const { sr, page = 'index' } = route.params
   const [html, setHtml] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -114,7 +117,7 @@ export function Wiki({ route }: NativeStackScreenProps<RootParams, 'Wiki'>) {
       ) : html === null ? (
         <Loading />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, maxWidth: 860, width: '100%', alignSelf: 'center' }}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 + dock, maxWidth: 860, width: '100%', alignSelf: 'center' }}>
           <Html html={html} onLink={(u) => void openUrl(u)} />
         </ScrollView>
       )}

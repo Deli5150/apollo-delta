@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useDockSpace } from '../lib/layout'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, Text, View } from 'react-native'
@@ -69,6 +70,7 @@ function MessageRow({ m, onRead }: { m: Message; onRead: (m: Message) => void })
 }
 
 export default function Inbox() {
+  const dock = useDockSpace()
   const account = useSession((s) => s.current)
   const [tab, setTab] = useState<Tab>('inbox')
   const [items, setItems] = useState<Message[]>([])
@@ -151,6 +153,7 @@ export default function Inbox() {
       ) : (
         <FlatList
           data={items}
+          contentContainerStyle={{ paddingBottom: dock }}
           keyExtractor={(m) => m.name}
           renderItem={({ item }) => <MessageRow m={item} onRead={read} />}
           ListEmptyComponent={loading ? <Loading /> : error ? <ErrorView error={error} onRetry={() => void load()} /> : <Empty icon="mail-open-outline" title={tab === 'unread' ? 'No unread messages' : 'Nothing here'} />}
@@ -164,6 +167,7 @@ export default function Inbox() {
 }
 
 export function Conversation({ route }: NativeStackScreenProps<RootParams, 'Conversation'>) {
+  const dock = useDockSpace()
   const m = route.params.message
   const thread = [m, ...(m.replies ?? [])]
   const last = thread[thread.length - 1]
@@ -173,7 +177,7 @@ export function Conversation({ route }: NativeStackScreenProps<RootParams, 'Conv
       <FlatList
         data={thread}
         keyExtractor={(x) => x.name}
-        contentContainerStyle={{ padding: 14, gap: 10 }}
+        contentContainerStyle={{ padding: 14, gap: 10, paddingBottom: 14 + dock }}
         renderItem={({ item }) => (
           <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, gap: 6 }}>
             <View style={{ flexDirection: 'row' }}>

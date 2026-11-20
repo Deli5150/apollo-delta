@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { feedTitle, initialSort, isSubreddit, rememberSort, setSubscribed, SORTS, TIMES } from '../lib/feeds'
 import { keep } from '../lib/filters'
 import { compact } from '../lib/format'
-import { useWide } from '../lib/layout'
+import { useWide, useDockSpace } from '../lib/layout'
 import * as api from '../lib/reddit/api'
 import { RedditError, useSession } from '../lib/reddit/transport'
 import type { Post, Sort, Subreddit, TimeRange } from '../lib/reddit/types'
@@ -92,6 +92,7 @@ export function Feed({ feed, onOpen, selected, left, showBack }: FeedProps) {
   const [width, setWidth] = useState(600)
   const req = useRef(0)
   const list = useRef<FlatList<Post>>(null)
+  const dock = useDockSpace()
   const wide = useWide()
   const sub = isSubreddit(feed)
 
@@ -242,6 +243,7 @@ export function Feed({ feed, onOpen, selected, left, showBack }: FeedProps) {
       <FlatList
         ref={list}
         data={shown}
+        contentContainerStyle={{ paddingBottom: dock }}
         keyExtractor={(p) => p.name}
         renderItem={({ item }) => (
           <View style={{ width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' }}>

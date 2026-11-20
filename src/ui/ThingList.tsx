@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
+import { useDockSpace } from '../lib/layout'
 import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, Text, View, type LayoutChangeEvent } from 'react-native'
 import type { Listing } from '../lib/reddit/api'
 import type { Comment, Post } from '../lib/reddit/types'
@@ -46,6 +47,7 @@ export function CommentCard({ comment }: { comment: Comment }) {
 }
 
 export function ThingList({ load, deps, header, empty, onOpenPost }: { load: (after: string | null) => Promise<Listing<Post | Comment>>; deps: unknown[]; header?: ReactElement | null; empty?: { title: string; text?: string }; onOpenPost?: (p: Post) => void }) {
+  const dock = useDockSpace()
   const [items, setItems] = useState<Array<Post | Comment>>([])
   const [after, setAfter] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -82,7 +84,7 @@ export function ThingList({ load, deps, header, empty, onOpenPost }: { load: (af
       <FlatList
         data={items}
         keyExtractor={(x) => x.name}
-        contentContainerStyle={{ alignItems: 'stretch' }}
+        contentContainerStyle={{ alignItems: 'stretch', paddingBottom: dock }}
         renderItem={({ item }) => (
           <View style={{ width: '100%', maxWidth: 860, alignSelf: 'center' }}>{item.kind === 't3' ? <PostCard post={item} showSubreddit width={width} onOpen={open} /> : <CommentCard comment={item} />}</View>
         )}

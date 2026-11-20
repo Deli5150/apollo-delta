@@ -3,7 +3,7 @@ import { Image } from 'expo-image'
 import type { ReactNode } from 'react'
 import { ActivityIndicator, Platform, Pressable, ScrollView, Switch, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useWide } from '../lib/layout'
+import { useWide, useDockSpace } from '../lib/layout'
 import { back, nav } from '../nav'
 import { colors, font, fs, hexA } from './theme'
 
@@ -135,9 +135,10 @@ export function ToggleRow({ title, sub, value, onChange, icon, iconColor }: { ti
 
 /** A scrolling settings-style page with a centered column. */
 export function Page({ children, maxWidth = 680 }: { children: ReactNode; maxWidth?: number }) {
+  const dock = useDockSpace()
   const insets = useSafeAreaInsets()
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40, alignItems: 'center' }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, dock) + 40, alignItems: 'center' }}>
       <View style={{ width: '100%', maxWidth }}>{children}</View>
     </ScrollView>
   )

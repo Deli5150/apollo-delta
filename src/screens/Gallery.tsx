@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useDockSpace } from '../lib/layout'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Image } from 'expo-image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -19,6 +20,7 @@ import { colors } from '../ui/theme'
 // desktop: the column buttons pick 2–5 columns.
 
 export default function Gallery({ route }: NativeStackScreenProps<RootParams, 'Gallery'>) {
+  const dock = useDockSpace()
   const feed = route.params.feed
   const saved = feed.startsWith('saved:')
   const category = saved ? feed.slice(6) : ''
@@ -84,6 +86,7 @@ export default function Gallery({ route }: NativeStackScreenProps<RootParams, 'G
           key={cols}
           data={items}
           numColumns={cols}
+          contentContainerStyle={{ paddingBottom: dock }}
           keyExtractor={(p) => p.name}
           renderItem={({ item }) => {
             const m = item.media

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
+import { useDockSpace } from '../lib/layout'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, SectionList, Text, View } from 'react-native'
 import { useShallow } from 'zustand/react/shallow'
@@ -34,6 +35,7 @@ const SYSTEM: Item[] = [
 ]
 
 export function SubredditList({ current, onPick, header = true }: { current?: string; onPick: (feed: string) => void; header?: boolean }) {
+  const dock = useDockSpace()
   const account = useSession((s) => s.current)
   const { subs, multis, loading } = useSubs(useShallow((s) => ({ subs: s.subs, multis: s.multis, loading: s.loading })))
   const favorites = useStore((s) => s.favorites)
@@ -146,7 +148,7 @@ export function SubredditList({ current, onPick, header = true }: { current?: st
             </Pressable>
           )
         }}
-        ListFooterComponent={<View style={{ height: 30 }} />}
+        ListFooterComponent={<View style={{ height: 30 + dock }} />}
       />
     </View>
   )
