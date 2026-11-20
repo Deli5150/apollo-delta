@@ -1,4 +1,4 @@
-import Svg, { Circle, Defs, Ellipse, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg'
+import Svg, { Circle, Defs, Ellipse, G, Line, LinearGradient, Path, Rect, Stop } from 'react-native-svg'
 
 // Apollo Delta's icon (assets/src/icon.svg) in each alternate colourway, drawn live for
 // Settings → App Icon. The desktop app turns the picked one into the dock icon (iconPng).
@@ -26,23 +26,27 @@ export const ICONS: IconStyle[] = [
   { id: 'nebula', name: 'Nebula', bg: ['#ff5cf0', '#7b5cff', '#1a1233'], body: ['#ffffff', '#ffe0fb'], visor: '#1a1233', eyes: '#5ce1ff', ring: ['#5cffa8', '#fff35c'], orb: '#5cffa8', pack: 'Secret' }
 ]
 
+/** The robot drawn a size up in its frame, and its face a size up again (grown upward, clear of the ring). Same as assets/src/icon.svg. */
+const ART = 'translate(512 530) scale(1.12) translate(-512 -530)'
+const FACE = 'translate(512 767) scale(1.22) translate(-512 -767)'
+
 export function iconSvg(s: IconStyle): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
 <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${s.bg[0]}"/><stop offset="0.55" stop-color="${s.bg[1]}"/><stop offset="1" stop-color="${s.bg[2]}"/></linearGradient>
 <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.body[0]}"/><stop offset="1" stop-color="${s.body[1]}"/></linearGradient></defs>
 <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
-<g transform="translate(100 100) scale(0.8047)">
+<g transform="translate(100 100) scale(0.8047)"><g transform="${ART}">
 <path d="M 168 742 A 360 92 -12 0 1 856 596" fill="none" stroke="${s.ring[0]}" stroke-width="30" stroke-linecap="round"/>
 <line x1="512" y1="300" x2="512" y2="196" stroke="${s.body[0]}" stroke-width="30" stroke-linecap="round"/>
 <circle cx="512" cy="172" r="40" fill="${s.orb}"/>
 <path d="M 512 300 L 768 740 L 256 740 Z" fill="url(#body)" stroke="url(#body)" stroke-width="120" stroke-linejoin="round"/>
-<path d="M 396 520 Q 512 470 628 520 Q 660 600 600 640 Q 512 668 424 640 Q 364 600 396 520 Z" fill="${s.visor}"/>
+<g transform="${FACE}"><path d="M 396 520 Q 512 470 628 520 Q 660 600 600 640 Q 512 668 424 640 Q 364 600 396 520 Z" fill="${s.visor}"/>
 <ellipse cx="462" cy="572" rx="30" ry="38" fill="${s.eyes}"/><ellipse cx="562" cy="572" rx="30" ry="38" fill="${s.eyes}"/>
 <circle cx="472" cy="558" r="10" fill="#ffffff"/><circle cx="572" cy="558" r="10" fill="#ffffff"/>
 <path d="M 478 696 Q 512 722 546 696" fill="none" stroke="${s.visor}" stroke-width="16" stroke-linecap="round"/>
-<ellipse cx="392" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/><ellipse cx="632" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/>
+<ellipse cx="392" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/><ellipse cx="632" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/></g>
 <path d="M 856 596 A 360 92 -12 0 1 168 742" fill="none" stroke="${s.ring[1]}" stroke-width="34" stroke-linecap="round"/>
-</g></svg>`
+</g></g></svg>`
 }
 
 /** The icon as a PNG data URL (desktop only: drawn on a canvas). */
@@ -72,17 +76,26 @@ export function AppIcon({ style: s, size = 60 }: { style: IconStyle; size?: numb
         </LinearGradient>
       </Defs>
       <Rect x="100" y="100" width="824" height="824" rx="185" fill={`url(#bg-${s.id})`} />
+      {/* Inset like the real icon (iconSvg and the Mac icon): the art sits inside the rounded square. */}
+      <G transform="translate(100 100) scale(0.8047)">
+      <G transform={ART}>
       <Path d="M 168 742 A 360 92 -12 0 1 856 596" fill="none" stroke={s.ring[0]} strokeWidth={30} strokeLinecap="round" />
       <Line x1="512" y1="300" x2="512" y2="196" stroke={s.body[0]} strokeWidth={30} strokeLinecap="round" />
       <Circle cx="512" cy="172" r="40" fill={s.orb} />
       <Path d="M 512 300 L 768 740 L 256 740 Z" fill={`url(#body-${s.id})`} stroke={`url(#body-${s.id})`} strokeWidth={120} strokeLinejoin="round" />
+      <G transform={FACE}>
       <Path d="M 396 520 Q 512 470 628 520 Q 660 600 600 640 Q 512 668 424 640 Q 364 600 396 520 Z" fill={s.visor} />
       <Ellipse cx="462" cy="572" rx="30" ry="38" fill={s.eyes} />
       <Ellipse cx="562" cy="572" rx="30" ry="38" fill={s.eyes} />
       <Circle cx="472" cy="558" r="10" fill="#ffffff" />
       <Circle cx="572" cy="558" r="10" fill="#ffffff" />
       <Path d="M 478 696 Q 512 722 546 696" fill="none" stroke={s.visor} strokeWidth={16} strokeLinecap="round" />
+      <Ellipse cx="392" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity={0.75} />
+      <Ellipse cx="632" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity={0.75} />
+      </G>
       <Path d="M 856 596 A 360 92 -12 0 1 168 742" fill="none" stroke={s.ring[1]} strokeWidth={34} strokeLinecap="round" />
+      </G>
+      </G>
     </Svg>
   )
 }

@@ -24,7 +24,7 @@
     <circle cx="770" cy="880" r="8" opacity="0.6"/>
     <circle cx="250" cy="860" r="5" opacity="0.5"/>
   </g><!--/bg-->
-  <g id="art">
+  <g id="art" transform="translate(512 530) scale(1.12) translate(-512 -530)">
     <!-- orbit, back half -->
     <path d="M 168 742 A 360 92 -12 0 1 856 596" fill="none" stroke="#e8b43a" stroke-width="30" stroke-linecap="round"/>
     <!-- antenna -->
@@ -33,18 +33,21 @@
     <circle cx="500" cy="160" r="12" fill="#fff6d6"/>
     <!-- body: a rounded delta -->
     <path d="M 512 300 L 768 740 L 256 740 Z" fill="url(#body)" stroke="url(#body)" stroke-width="120" stroke-linejoin="round"/>
-    <!-- visor -->
-    <path d="M 396 520 Q 512 470 628 520 Q 660 600 600 640 Q 512 668 424 640 Q 364 600 396 520 Z" fill="#1c2257"/>
-    <!-- eyes -->
-    <ellipse cx="462" cy="572" rx="30" ry="38" fill="#7fe3ff"/>
-    <ellipse cx="562" cy="572" rx="30" ry="38" fill="#7fe3ff"/>
-    <circle cx="472" cy="558" r="10" fill="#ffffff"/>
-    <circle cx="572" cy="558" r="10" fill="#ffffff"/>
-    <!-- smile -->
-    <path d="M 478 696 Q 512 722 546 696" fill="none" stroke="#3a43a8" stroke-width="16" stroke-linecap="round"/>
-    <!-- cheeks -->
-    <ellipse cx="392" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/>
-    <ellipse cx="632" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/>
+    <!-- the face, enlarged upward so it sits clear of the ring -->
+    <g transform="translate(512 767) scale(1.22) translate(-512 -767)">
+      <!-- visor -->
+      <path d="M 396 520 Q 512 470 628 520 Q 660 600 600 640 Q 512 668 424 640 Q 364 600 396 520 Z" fill="#1c2257"/>
+      <!-- eyes -->
+      <ellipse cx="462" cy="572" rx="30" ry="38" fill="#7fe3ff"/>
+      <ellipse cx="562" cy="572" rx="30" ry="38" fill="#7fe3ff"/>
+      <circle cx="472" cy="558" r="10" fill="#ffffff"/>
+      <circle cx="572" cy="558" r="10" fill="#ffffff"/>
+      <!-- smile -->
+      <path d="M 478 696 Q 512 722 546 696" fill="none" stroke="#3a43a8" stroke-width="16" stroke-linecap="round"/>
+      <!-- cheeks -->
+      <ellipse cx="392" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/>
+      <ellipse cx="632" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/>
+    </g>
     <!-- orbit, front half -->
     <path d="M 856 596 A 360 92 -12 0 1 168 742" fill="none" stroke="#ffd45c" stroke-width="34" stroke-linecap="round"/>
   </g>
