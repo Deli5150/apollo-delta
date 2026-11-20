@@ -1,7 +1,7 @@
 {
   "name": "apollo-delta",
   "productName": "Apollo Delta",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Reddit client inspired by Apollo",
   "author": "Deli5150",
   "license": "MIT",
@@ -19,7 +19,7 @@
   "build": {
     "appId": "app.apollodelta.reddit",
     "productName": "Apollo Delta",
-    "copyright": "Copyright \u00a9 2026 Apollo Delta",
+    "copyright": "Copyright © 2026 Apollo Delta",
     "directories": {
       "output": "../dist",
       "buildResources": "build"
