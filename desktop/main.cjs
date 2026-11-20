@@ -67,7 +67,8 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: false }
   })
   // `npm run dev` points the app at the Expo dev server (live reload) instead of the built web/.
-  win.loadURL(process.env.DELTA_DEV_URL || 'app://delta/')
+  // DELTA_DEMO=1 opens the demo (src/lib/reddit/demo.ts): sample posts, nothing sent to Reddit.
+  win.loadURL((process.env.DELTA_DEV_URL || 'app://delta/') + (process.env.DELTA_DEMO ? '?demo=1' : ''))
   win.once('ready-to-show', () => {
     // Screenshot test runs open behind your windows instead of taking focus.
     if (process.env.DELTA_SHOTS) win.showInactive()

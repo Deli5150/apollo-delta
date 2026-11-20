@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useShallow } from 'zustand/react/shallow'
 import { loadSubs } from './src/lib/feeds'
 import { useKeyboard, useTab, useWide, type TabKey } from './src/lib/layout'
+import { initDemo, isDemo } from './src/lib/reddit/demo'
 import { loadRouteUpdates } from './src/lib/reddit/routes'
 import { loadAccounts, refreshMe, useSession } from './src/lib/reddit/transport'
 import { desktop } from './src/lib/storage'
@@ -201,7 +202,7 @@ export default function App() {
 
   useEffect(() => {
     if (!loaded) return
-    void loadAccounts(useStore.getState().currentAccount)
+    void initDemo().then(() => loadAccounts(isDemo() ? 'demo' : useStore.getState().currentAccount))
   }, [loaded])
 
   // Remember which account you used last.

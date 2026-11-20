@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { desktop, type AccountInfo, type RedditRequest, type RedditResponse } from '../storage'
+import { demoTransport, isDemo } from './demo'
 import { mobileTransport } from './mobile'
 import { isCoolingDown, noteResult, routesFor, routeUrl } from './routes'
 
@@ -20,7 +21,21 @@ export interface Transport {
   upload(id: string, file: { name: string; mimetype: string; base64: string }): Promise<{ url?: string; assetId?: string; error?: string }>
 }
 
-export const transport: Transport = desktop?.reddit ?? mobileTransport
+const real: Transport = desktop?.reddit ?? mobileTransport
+
+/** The real transport, or the demo's made-up Reddit when the app was opened in demo mode. */
+export const transport: Transport = {
+  accounts: () => (isDemo() ? demoTransport : real).accounts(),
+  signIn: (reauthId) => (isDemo() ? demoTransport : real).signIn(reauthId),
+  browser: real.browser && (() => real.browser!()),
+  signInWithBrowser: real.signInWithBrowser && ((reauthId) => (isDemo() ? demoTransport.signIn() : real.signInWithBrowser!(reauthId))),
+  cancelBrowser: real.cancelBrowser && (() => real.cancelBrowser!()),
+  signOut: (id) => (isDemo() ? demoTransport : real).signOut(id),
+  refresh: (id) => (isDemo() ? demoTransport : real).refresh(id),
+  reorder: (ids) => (isDemo() ? demoTransport : real).reorder(ids),
+  request: (id, req) => (isDemo() ? demoTransport : real).request(id, req),
+  upload: (id, file) => (isDemo() ? demoTransport : real).upload(id, file)
+}
 
 interface Session {
   accounts: AccountInfo[]

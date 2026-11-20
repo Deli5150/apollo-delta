@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { CommentSort, Post, Sort, TimeRange } from './reddit/types'
 import { switchTo, withActive, type ProfileData } from './profiles'
+import { isDemo } from './reddit/demo'
 import { loadData, saveData } from './storage'
 
 // Everything Apollo Delta remembers (not your Reddit account itself: that's the signed-in session).
@@ -189,6 +190,8 @@ interface Store extends Data {
 let timer: ReturnType<typeof setTimeout> | null = null
 
 const persist = (get: () => Store) => {
+  // The demo (src/lib/reddit/demo.ts) leaves your saved data alone.
+  if (isDemo()) return
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
     const { loaded, hydrate, update, set, setSettings, switchProfile, ...data } = get()
