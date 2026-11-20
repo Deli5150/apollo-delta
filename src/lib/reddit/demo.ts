@@ -170,7 +170,7 @@ function answer(url: string): unknown {
   if ((m = p.match(/^\/message\/(\w+)/))) return listing(m[1] === 'unread' ? MESSAGES.filter((x) => x.data.new) : m[1] === 'sent' ? [] : MESSAGES)
   if ((m = p.match(/^\/user\/([\w-]+)\/about$/))) return { kind: 't2', data: m[1] === ME ? ME_RAW : { name: m[1], link_karma: 4200, comment_karma: 1800, total_karma: 6000, created_utc: ago(60 * 24 * 700) } }
   if (/^\/user\/[\w-]+\/trophies$/.test(p)) return { kind: 'TrophyList', data: { trophies: [] } }
-  if ((m = p.match(/^\/user\/([\w-]+)\/(\w+)$/))) return listing(m[2] === 'saved' || m[1] !== ME ? SEEDS.slice(0, 3).map((s) => ({ kind: 't3', data: postRaw(s) })) : [])
+  if ((m = p.match(/^\/user\/([\w-]+)\/(\w+)$/))) return listing(/^(overview|submitted|saved|upvoted)$/.test(m[2]) ? SEEDS.slice(0, 3).map((s) => ({ kind: 't3', data: postRaw(s) })) : [])
   if (p === '/api/user_data_by_account_ids') return {}
   if (p === '/search') {
     const q = (u.searchParams.get('q') ?? '').toLowerCase()
