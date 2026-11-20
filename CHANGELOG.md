@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+- Gallery View on phones: a picture no longer opens with the comments stuck open after you closed the viewer with the comments up (#1).
+- Send Feedback on phones: the description now reaches GitHub. The form opens in a browser tab inside the app instead of the GitHub app, which kept only the title; the description is also copied, in case anything still leaves it out.
+
 ## [1.0.0] - 2026-11-20
 
 - Apollo Delta: a Reddit client inspired by Apollo, for Mac, Windows and Android.

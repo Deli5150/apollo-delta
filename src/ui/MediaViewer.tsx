@@ -39,9 +39,14 @@ export function MediaViewerHost() {
   const [box, setBox] = useState<{ w: number; h: number } | null>(null)
   useEffect(() => {
     if (open) setView({ items: open.items, index: open.index, post: open.post })
-    else setComments(false)
+    // Every opening starts with the comments put away. (Closed with the sheet up, its slide-out
+    // never finishes off screen, which used to leave it stuck open on the next post.)
+    setComments(false)
+    setPanel(false)
+    slide.setValue(0)
+    drag.setValue(0)
     setZoom(false)
-  }, [open])
+  }, [open, slide, drag])
   useEffect(() => {
     if (comments) {
       drag.setValue(0)

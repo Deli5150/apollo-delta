@@ -5,7 +5,7 @@ import { Pressable, Text, View } from 'react-native'
 import { useShallow } from 'zustand/react/shallow'
 import { CHANGELOG } from '../data/changelog'
 import { useSubs } from '../lib/feeds'
-import { feedbackUrl, type FeedbackKind } from '../lib/feedback'
+import { sendFeedback, type FeedbackKind } from '../lib/feedback'
 import * as api from '../lib/reddit/api'
 import { loadRouteUpdates, resetRouteHealth, routeHealth } from '../lib/reddit/routes'
 import { myName, signIn, signOut, switchAccount, useSession } from '../lib/reddit/transport'
@@ -685,7 +685,7 @@ export function FeedbackScreen() {
           <Field placeholder="Title" value={title} onChangeText={setTitle} />
           <Field placeholder={kind === 'bug' ? 'What happened?' : 'What would you like?'} value={text} onChangeText={setText} multiline style={{ minHeight: 160, textAlignVertical: 'top' }} />
           <Text style={{ color: colors.dim, fontSize: fs(12.5) }}>This opens a filled-in issue on GitHub for you to review and submit.</Text>
-          <Button title="Continue on GitHub" icon="logo-github" disabled={!title.trim()} onPress={() => openExternal(feedbackUrl(kind, title, text, VERSION))} />
+          <Button title="Continue on GitHub" icon="logo-github" disabled={!title.trim()} onPress={() => void sendFeedback(kind, title, text, VERSION).then((r) => r === 'copied' && toast('Your description is also copied, in case GitHub leaves it out')).catch(fail)} />
         </View>
       </Page>
     </Screen>

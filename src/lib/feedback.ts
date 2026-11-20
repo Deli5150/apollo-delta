@@ -1,3 +1,5 @@
+import * as Clipboard from 'expo-clipboard'
+import * as WebBrowser from 'expo-web-browser'
 import { Platform } from 'react-native'
 import { REPO_URL } from './release'
 import { desktop } from './storage'
@@ -41,4 +43,20 @@ export function feedbackUrl(kind: FeedbackKind, title: string, text: string, ver
     url = `${REPO_URL}/issues/new?${query(fields)}`
   }
   return url
+}
+
+/**
+ * Opens the filled-in form. Phones open it in a browser tab inside the app: handed to the system,
+ * the link goes to the GitHub app when it's installed, whose own new-issue screen keeps only the
+ * title. The description is also copied, in case anything still leaves it out.
+ */
+export async function sendFeedback(kind: FeedbackKind, title: string, text: string, version: string): Promise<'copied' | 'opened'> {
+  const url = feedbackUrl(kind, title, text, version)
+  if (desktop) {
+    desktop.openExternal(url)
+    return 'opened'
+  }
+  if (text.trim()) await Clipboard.setStringAsync(text.trim()).catch(() => undefined)
+  await WebBrowser.openBrowserAsync(url, { showTitle: true, enableBarCollapsing: true })
+  return text.trim() ? 'copied' : 'opened'
 }
