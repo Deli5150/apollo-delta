@@ -59,11 +59,11 @@ export function WebSignInHost() {
             thirdPartyCookiesEnabled
             injectedJavaScript={PROBE}
             onMessage={onMessage}
-            // Reddit's page opens Google's sign-in as a pop-up by itself; inside a WebView that pop-up
-            // took over the page and then went blank. Pop-ups are ignored, so Reddit's own form stays.
+            // "Continue with Google" opens Google's sign-in as a pop-up that hands the result back to
+            // this page. Pop-ups show as a window over the sheet (patches/react-native-webview*.patch);
+            // ones the page opens by itself, without a tap, are still blocked.
             setSupportMultipleWindows
             javaScriptCanOpenWindowsAutomatically={false}
-            onOpenWindow={(): void => {}}
             style={{ flex: 1, backgroundColor: '#fff' }}
           />
         )}

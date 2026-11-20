@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
+    "patch-package": "^8.0.0",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   },
@@ -58,7 +59,8 @@
     "dist:android": "cd android && ./gradlew assembleRelease",
     "dist:ios": "sh scripts/ios.sh",
     "release": "node scripts/release.mjs",
-    "icons": "desktop/node_modules/.bin/electron scripts/render-icons.cjs"
+    "icons": "desktop/node_modules/.bin/electron scripts/render-icons.cjs",
+    "postinstall": "patch-package"
   },
   "private": true,
   "license": "MIT",
