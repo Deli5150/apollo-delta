@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useDockSpace } from '../lib/layout'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from 'react'
 import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, Text, View, type LayoutChangeEvent } from 'react-native'
 import { useShallow } from 'zustand/react/shallow'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -84,7 +84,7 @@ function insertReply(nodes: Node[], parent: string, c: Comment): Node[] {
   return nodes.map((n) => (n.kind !== 't1' ? n : n.name === parent ? { ...n, replies: [c, ...n.replies] } : { ...n, replies: insertReply(n.replies, parent, c) }))
 }
 
-function CommentRow({ row, isNew, avatar, op, onToggle, postId }: { row: Extract<Row, { kind: 'comment' }>; isNew: boolean; avatar?: string; op: string; onToggle: (c: Comment) => void; postId: string }) {
+const CommentRow = memo(function CommentRow({ row, isNew, avatar, op, onToggle, postId }: { row: Extract<Row, { kind: 'comment' }>; isNew: boolean; avatar?: string; op: string; onToggle: (c: Comment) => void; postId: string }) {
   const c = usePatched(row.c)
   const s = useStore(useShallow((x) => ({ avatars: x.settings.showUserAvatars, inline: x.settings.inlineMedia, scores: x.settings.showScoreOnComments, target: x.settings.translateTarget })))
   const translated = useTranslations((x) => (x.shown[c.name] ? x.byName[c.name] : undefined))
@@ -153,7 +153,9 @@ function CommentRow({ row, isNew, avatar, op, onToggle, postId }: { row: Extract
       </View>
     </Pressable>
   )
-}
+},
+// Rows are rebuilt on every change, but an unchanged comment keeps the same object: skip those.
+(a, b) => a.row.c === b.row.c && a.row.collapsed === b.row.collapsed && a.row.hiddenCount === b.row.hiddenCount && a.row.depth === b.row.depth && a.isNew === b.isNew && a.avatar === b.avatar && a.op === b.op && a.onToggle === b.onToggle && a.postId === b.postId)
 
 function PostHeader({ post: p0, width, commentSort, onSort, hideMedia }: { post: Post; width: number; commentSort: CommentSort; onSort: () => void; hideMedia?: boolean }) {
   const p = usePatched(p0)

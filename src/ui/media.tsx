@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { memo, useEffect, useRef, useState } from 'react'
+import { NavigationContext } from '@react-navigation/native'
+import { createContext, memo, useContext, useEffect, useRef, useState } from 'react'
 import { Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import { create } from 'zustand'
 import { linkPreview } from '../lib/preview'
@@ -39,6 +40,56 @@ interface Viewer {
 }
 
 export const useViewer = create<{ open: Viewer | null }>(() => ({ open: null }))
+
+// ── When videos may play ─────────────────────────────────────────────────────────────────────
+// Phones have no IntersectionObserver, so a feed tells its cards which posts are on screen; a
+// video plays only while its post is on screen, its page is in front, its tab is showing and no
+// picture is open over it. (Desktop's Video.web.tsx also checks it's on screen by itself.)
+
+/** The posts a feed has on screen right now (a feed provides one; elsewhere every post counts). */
+export type OnScreen = ReturnType<typeof createOnScreen>
+export function createOnScreen() {
+  return create<{ names: Set<string> }>(() => ({ names: new Set() }))
+}
+export const OnScreenContext = createContext<OnScreen | null>(null)
+/** False while the tab this page belongs to is hidden. */
+export const PaneActive = createContext(true)
+const noScreen = createOnScreen()
+
+/** For a list of posts: the store its cards read, and the FlatList props that keep it current. */
+export function useOnScreenTracking() {
+  const [store] = useState(createOnScreen)
+  const [props] = useState(() => ({
+    viewabilityConfig: { itemVisiblePercentThreshold: 40, minimumViewTime: 120 },
+    onViewableItemsChanged: ({ viewableItems }: { viewableItems: Array<{ item: unknown }> }) =>
+      store.setState({ names: new Set(viewableItems.map((v) => (v.item as { name?: string }).name ?? '')) })
+  }))
+  return { store, props }
+}
+
+/** Whether this page is the one in front (true outside any navigator, as in the media viewer). */
+export function useScreenFocused(): boolean {
+  const navigation = useContext(NavigationContext)
+  const [focused, setFocused] = useState(() => navigation?.isFocused() ?? true)
+  useEffect(() => {
+    if (!navigation) return
+    setFocused(navigation.isFocused())
+    const a = navigation.addListener('focus', () => setFocused(true))
+    const b = navigation.addListener('blur', () => setFocused(false))
+    return () => (a(), b())
+  }, [navigation])
+  return focused
+}
+
+/** Whether a post's video may play now. */
+export function useMayPlay(name: string): boolean {
+  const onScreen = useContext(OnScreenContext)
+  const visible = (onScreen ?? noScreen)((s) => !onScreen || s.names.has(name))
+  const pane = useContext(PaneActive)
+  const focused = useScreenFocused()
+  const viewing = useViewer((s) => Boolean(s.open))
+  return visible && pane && focused && !viewing
+}
 
 export function openViewer(items: ViewerItem[], index = 0, post?: Post, sequence?: ViewerSequence): void {
   if (items.length) useViewer.setState({ open: { items, index, post, sequence } })
@@ -109,7 +160,7 @@ export const LinkCard = memo(function LinkCard({ url, thumb, onPress, compact }:
   const image = meta?.image ?? thumb
   return (
     <Pressable onPress={onPress} style={({ pressed, hovered }: any) => ({ flexDirection: 'row', borderRadius: 12, overflow: 'hidden', backgroundColor: pressed || hovered ? colors.cardHi : colors.field, borderWidth: 1, borderColor: colors.border })}>
-      {image ? <Image source={{ uri: image }} style={{ width: compact ? 64 : 96, minHeight: compact ? 64 : 80, backgroundColor: colors.card }} contentFit="cover" /> : null}
+      {image ? <Image cachePolicy="memory-disk" source={{ uri: image }} style={{ width: compact ? 64 : 96, minHeight: compact ? 64 : 80, backgroundColor: colors.card }} contentFit="cover" /> : null}
       <View style={{ flex: 1, padding: 10, justifyContent: 'center', gap: 2 }}>
         {meta?.title && (
           <Text numberOfLines={2} style={{ color: colors.text, fontSize: fs(14), fontWeight: '600' }}>
@@ -178,7 +229,7 @@ function Gallery({ items, width, maxHeight, onOpen, blur }: { items: MediaImage[
       >
         {items.map((img, i) => (
           <Pressable key={i} onPress={() => onOpen(i)} style={{ width, height: h }}>
-            <Image source={{ uri: pick(img, width) }} style={{ width, height: h, backgroundColor: '#000' }} contentFit="contain" blurRadius={blur ? 40 : 0} />
+            <Image cachePolicy="memory-disk" source={{ uri: pick(img, width) }} style={{ width, height: h, backgroundColor: '#000' }} contentFit="contain" blurRadius={blur ? 40 : 0} />
           </Pressable>
         ))}
       </ScrollView>
@@ -222,6 +273,8 @@ export const PostMedia = memo(function PostMedia({ post, width, maxHeight = 640,
   const covered = !revealed && ((post.nsfw && blurNsfw) || (post.spoiler && blurSpoiler))
   const label = post.nsfw ? 'NSFW' : 'Spoiler'
   const open = (i = 0) => openViewer(viewerItems(m), i, post)
+  const play = useMayPlay(post.name)
+  autoplay = (autoplay ?? true) && play
   const box = (w?: number, h?: number) => ({ width, height: Math.min(maxHeight, width / ratio(w, h)), backgroundColor: '#000', overflow: 'hidden' as const })
 
   switch (m.kind) {
@@ -229,7 +282,7 @@ export const PostMedia = memo(function PostMedia({ post, width, maxHeight = 640,
       const style = box(m.image.width, m.image.height)
       return (
         <Pressable onPress={() => (covered ? setRevealed(true) : open())} style={style}>
-          <Image source={{ uri: pick(m.image, width * 1.5) }} style={{ width: '100%', height: '100%' }} contentFit={full ? 'contain' : 'cover'} blurRadius={covered ? 50 : 0} transition={120} recyclingKey={post.id} />
+          <Image cachePolicy="memory-disk" source={{ uri: pick(m.image, width * 1.5) }} style={{ width: '100%', height: '100%' }} contentFit={full ? 'contain' : 'cover'} blurRadius={covered ? 50 : 0} transition={120} recyclingKey={post.id} />
           {covered && <Cover label={label} onReveal={() => setRevealed(true)} />}
         </Pressable>
       )
@@ -240,14 +293,14 @@ export const PostMedia = memo(function PostMedia({ post, width, maxHeight = 640,
         <View style={style}>
           {covered ? (
             <>
-              <Image source={{ uri: pick(m.image, width) }} style={{ width: '100%', height: '100%' }} blurRadius={50} />
+              <Image cachePolicy="memory-disk" source={{ uri: pick(m.image, width) }} style={{ width: '100%', height: '100%' }} blurRadius={50} />
               <Cover label={label} onReveal={() => setRevealed(true)} />
             </>
           ) : m.mp4 ? (
             <Video mp4={m.mp4} poster={pick(m.image, width)} autoPlay={autoplay} muted loop onPress={() => open()} />
           ) : (
             <Pressable onPress={() => open()} style={{ flex: 1 }}>
-              <Image source={{ uri: m.image.url }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+              <Image cachePolicy="memory-disk" source={{ uri: m.image.url }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
             </Pressable>
           )}
           <Badge icon="infinite" text="GIF" />
@@ -267,7 +320,7 @@ export const PostMedia = memo(function PostMedia({ post, width, maxHeight = 640,
         <View style={style}>
           {covered ? (
             <>
-              {m.poster && <Image source={{ uri: m.poster }} style={{ width: '100%', height: '100%' }} blurRadius={50} />}
+              {m.poster && <Image cachePolicy="memory-disk" source={{ uri: m.poster }} style={{ width: '100%', height: '100%' }} blurRadius={50} />}
               <Cover label={label} onReveal={() => setRevealed(true)} />
             </>
           ) : (
@@ -281,7 +334,7 @@ export const PostMedia = memo(function PostMedia({ post, width, maxHeight = 640,
       const thumb = m.poster ?? `https://i.ytimg.com/vi/${m.id}/hqdefault.jpg`
       return (
         <Pressable onPress={() => onLink(`https://www.youtube.com/watch?v=${m.id}${m.start ? `&t=${m.start}` : ''}`)} style={box(16, 9)}>
-          <Image source={{ uri: thumb }} style={{ width: '100%', height: '100%' }} contentFit="cover" blurRadius={covered ? 50 : 0} />
+          <Image cachePolicy="memory-disk" source={{ uri: thumb }} style={{ width: '100%', height: '100%' }} contentFit="cover" blurRadius={covered ? 50 : 0} />
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
             <View style={{ width: 62, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,0,0,0.9)', alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name="play" size={24} color="#fff" />
@@ -296,7 +349,7 @@ export const PostMedia = memo(function PostMedia({ post, width, maxHeight = 640,
       if (m.poster)
         return (
           <Pressable onPress={() => onLink(m.kind === 'embed' ? m.url : `https://imgur.com/a/${m.id}`)} style={box(16, 9)}>
-            <Image source={{ uri: m.poster }} style={{ width: '100%', height: '100%' }} contentFit="cover" blurRadius={covered ? 50 : 0} />
+            <Image cachePolicy="memory-disk" source={{ uri: m.poster }} style={{ width: '100%', height: '100%' }} contentFit="cover" blurRadius={covered ? 50 : 0} />
             <Badge icon={m.kind === 'embed' ? 'play' : 'images'} text={m.kind === 'embed' ? m.provider : 'Imgur album'} />
           </Pressable>
         )
@@ -341,7 +394,7 @@ export function Thumb({ post, size, blurNsfw, blurSpoiler, onPress }: { post: Po
   }
   return (
     <Pressable onPress={onPress} style={{ width: size, height: size, borderRadius: 10, overflow: 'hidden', backgroundColor: colors.field, alignItems: 'center', justifyContent: 'center' }}>
-      {src ? <Image source={{ uri: src }} style={{ width: size, height: size }} contentFit="cover" blurRadius={blur ? 18 : 0} recyclingKey={post.id} /> : <Ionicons name="link" size={size * 0.36} color={colors.faint} />}
+      {src ? <Image cachePolicy="memory-disk" source={{ uri: src }} style={{ width: size, height: size }} contentFit="cover" blurRadius={blur ? 18 : 0} recyclingKey={post.id} /> : <Ionicons name="link" size={size * 0.36} color={colors.faint} />}
       {icon && src && (
         <View style={{ position: 'absolute', right: 4, bottom: 4, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name={icon} size={11} color="#fff" />

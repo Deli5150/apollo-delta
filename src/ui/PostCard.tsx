@@ -29,7 +29,7 @@ export function FlairPill({ flair, small }: { flair: Flair; small?: boolean }) {
         // Text and emoji in the order the flair has them.
         flair.parts.map((p, i) =>
           p.t === 'emoji' ? (
-            <Image key={i} source={{ uri: p.url }} style={{ width: small ? 13 : 15, height: small ? 13 : 15 }} contentFit="contain" />
+            <Image key={i} cachePolicy="memory-disk" source={{ uri: p.url }} style={{ width: small ? 13 : 15, height: small ? 13 : 15 }} contentFit="contain" />
           ) : p.v.trim() ? (
             <Text key={i} numberOfLines={1} style={{ color: fg, fontSize: fs(small ? 10.5 : 11.5), fontWeight: '600', flexShrink: 1 }}>
               {p.v.trim()}

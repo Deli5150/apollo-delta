@@ -43,9 +43,19 @@ stack, updater and release tooling.
   /api/me.json from the page). `modules/delta-reddit` (Kotlin) reads the WebView's cookies incl.
   httpOnly (CookieManager), then clears them, and sends requests with OkHttp *without* a cookie jar
   (RN's fetch shares the WebView's jar, which would mix accounts). Accounts + cookies (chunked) in
-  expo-secure-store (`src/lib/reddit/mobile.ts`). Video = expo-video (`src/ui/Video.tsx`). Reddit's
-  page auto-opens a Google pop-up that blanked the WebView, so pop-ups are ignored; Google sign-in
-  on Android is not solved yet. Build: `npx expo prebuild -p android --clean`, local.properties
+  expo-secure-store (`src/lib/reddit/mobile.ts`). Video = expo-video (`src/ui/Video.tsx`). Google sign-in:
+  Reddit's button opens Google in a pop-up that answers via window.opener; react-native-webview is
+  patched (patches/, patch-package) to show pop-ups as a real Dialog WebView; untapped pop-ups stay
+  blocked (javaScriptCanOpenWindowsAutomatically=false).
+- Phones (2026-11-19): tabs are a floating frosted dock over every page (`Dock` in TabBar.tsx,
+  expo-blur with BlurTargetView), hidden for the media viewer and keyboard; scrolling pages add
+  `useDockSpace()` at the bottom. Gestures: react-native-gesture-handler v3 hooks + Reanimated 4
+  (worklets): pinch/double-tap zoom (`src/ui/ZoomImage.tsx`), pinch for Gallery View columns. A
+  `Modal` needs its own `GestureHandlerRootView` on Android. Feed videos play only while on screen,
+  focused, in the visible tab and with no viewer open (`useMayPlay` in media.tsx).
+- Emulator testing: `adb root`, then two-finger pinches via sendevent on /dev/input/event1 (MT
+  slots; tracking id -1 to lift). The emulator renders slowly (~44 ms median frames even on
+  Settings), so judge performance changes relative to that, not absolutely. Build: `npx expo prebuild -p android --clean`, local.properties
   sdk.dir, JAVA_HOME=openjdk@17, `./gradlew assembleRelease` (plugins/withGradleMemory raises
   memory). Release key credentials/delta-release.keystore alias delta, DELTA_RELEASE_* in
   ~/.gradle/gradle.properties, SHA-1 DE:DE:C0:99:B8:DA:4E:92:06:3B:D1:64:39:08:66:85:46:65:CC:49.

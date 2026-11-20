@@ -150,7 +150,7 @@ export function Avatar({ uri, name, size = 28, square }: { uri?: string; name?: 
   let h = 0
   for (const c of name ?? '') h = (h * 31 + c.charCodeAt(0)) % 360
   if (uri)
-    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: square ? size * 0.22 : size / 2, backgroundColor: colors.field }} contentFit="cover" recyclingKey={uri} />
+    return <Image cachePolicy="memory-disk" source={{ uri }} style={{ width: size, height: size, borderRadius: square ? size * 0.22 : size / 2, backgroundColor: colors.field }} contentFit="cover" recyclingKey={uri} />
   return (
     <View style={{ width: size, height: size, borderRadius: square ? size * 0.22 : size / 2, backgroundColor: `hsl(${h}, 55%, 48%)`, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: '#fff', fontWeight: '800', fontSize: size * 0.44 }}>{letter}</Text>

@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar'
 import { memo, useEffect, useRef, type ComponentRef } from 'react'
 import { ActivityIndicator, AppState, Platform, useColorScheme, View } from 'react-native'
 import { Freeze } from 'react-freeze'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useShallow } from 'zustand/react/shallow'
 import { loadSubs } from './src/lib/feeds'
@@ -30,7 +31,7 @@ import { MediaViewerHost } from './src/ui/MediaViewer'
 import { OverlayHost } from './src/ui/overlays'
 import { BrowserSignInHost } from './src/ui/SignIn'
 import { WebSignInHost } from './src/ui/WebSignIn'
-import { useViewer } from './src/ui/media'
+import { PaneActive, useViewer } from './src/ui/media'
 import { Dock, Rail, TABS } from './src/ui/TabBar'
 import { applyTheme, colors, setTextScale, themeKey } from './src/ui/theme'
 import { ToastHost } from './src/ui/toast'
@@ -63,9 +64,11 @@ function TabPane({ active, k }: { active: boolean; k: TabKey }) {
   const Screen = SCREENS[k]
   return (
     <View style={{ flex: 1, display: active ? 'flex' : 'none' }}>
-      <Freeze freeze={!active}>
-        <Screen />
-      </Freeze>
+      <PaneActive.Provider value={active}>
+        <Freeze freeze={!active}>
+          <Screen />
+        </Freeze>
+      </PaneActive.Provider>
     </View>
   )
 }
@@ -229,6 +232,7 @@ export default function App() {
 
   const ready = loaded && sessionLoaded
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider style={{ backgroundColor: colors.bg }}>
       <StatusBar style={colors.dark ? 'light' : 'dark'} />
       {!ready ? (
@@ -267,5 +271,6 @@ export default function App() {
       <ToastHost />
       <OverlayHost />
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
 import { useEffect, useRef, useState } from 'react'
 import { Animated, Easing, Modal, PanResponder, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { compact } from '../lib/format'
 import { desktop } from '../lib/storage'
@@ -13,8 +14,9 @@ import { useViewer, viewerItems, type ViewerItem } from './media'
 import { colors } from './theme'
 import { toast } from './toast'
 import { Video } from './Video'
+import { ZoomImage } from './ZoomImage'
 
-// The full-screen media viewer: pictures (tap to zoom, tap around to close), galleries (arrow keys / buttons),
+// The full-screen media viewer: pictures (pinch or double-tap to zoom on phones, click on desktop; tap around to close), galleries (arrow keys / buttons),
 // videos with controls; save, copy, open the post's comments (from Gallery View, in a panel at the
 // right that follows the arrow keys from post to post).
 
@@ -124,11 +126,15 @@ export function MediaViewerHost() {
   })
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={() => (comments ? setComments(false) : close())}>
+      {/* A modal is its own view tree on Android: gestures need their own root inside it. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <View onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} style={{ flex: 1, flexDirection: 'row', backgroundColor: phone ? '#000' : 'rgba(0,0,0,0.94)' }}>
       <View style={{ width: stageW, height: H }}>
         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
         <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          {item.kind === 'image' ? (
+          {item.kind === 'image' && phone ? (
+            <ZoomImage key={item.url} uri={item.url} {...fitted(item, loaded, room.w, room.h)} stageW={stageW} stageH={H} onClose={close} onLoad={(e) => setLoaded({ url: item.url, w: e.source.width, h: e.source.height })} />
+          ) : item.kind === 'image' ? (
             <Pressable onPress={() => setZoom((z) => !z)} style={{ ...(zoom ? { width: stageW, height: H } : fitted(item, loaded, room.w, room.h)), ...(Platform.OS === 'web' ? ({ cursor: zoom ? 'zoom-out' : 'zoom-in' } as object) : {}) }}>
               <Image source={{ uri: item.url }} style={{ width: '100%', height: '100%' }} contentFit={zoom ? 'cover' : 'contain'} allowDownscaling={false} transition={100} onLoad={(e) => setLoaded({ url: item.url, w: e.source.width, h: e.source.height })} />
             </Pressable>
@@ -220,6 +226,7 @@ export function MediaViewerHost() {
         </>
       )}
       </View>
+      </GestureHandlerRootView>
     </Modal>
   )
 }

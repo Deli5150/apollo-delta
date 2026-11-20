@@ -28,6 +28,11 @@ export function Video({ hls, mp4, autoPlay = true, muted = true, loop = true, co
   useEffect(() => {
     player.muted = muted
   }, [muted, player])
+  // Feeds turn autoplay off as the video leaves the screen (or the page goes behind another).
+  useEffect(() => {
+    if (autoPlay) player.play()
+    else player.pause()
+  }, [autoPlay, player])
   return (
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       <VideoView player={player} style={{ flex: 1 }} contentFit={contain ? 'contain' : 'cover'} nativeControls={controls} allowsPictureInPicture={controls} />

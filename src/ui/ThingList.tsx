@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
+import { OnScreenContext, useOnScreenTracking } from './media'
 import { useDockSpace } from '../lib/layout'
 import { ActivityIndicator, FlatList, Platform, Pressable, RefreshControl, Text, View, type LayoutChangeEvent } from 'react-native'
 import type { Listing } from '../lib/reddit/api'
@@ -48,6 +49,7 @@ export function CommentCard({ comment }: { comment: Comment }) {
 
 export function ThingList({ load, deps, header, empty, onOpenPost }: { load: (after: string | null) => Promise<Listing<Post | Comment>>; deps: unknown[]; header?: ReactElement | null; empty?: { title: string; text?: string }; onOpenPost?: (p: Post) => void }) {
   const dock = useDockSpace()
+  const onScreen = useOnScreenTracking()
   const [items, setItems] = useState<Array<Post | Comment>>([])
   const [after, setAfter] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -80,9 +82,11 @@ export function ThingList({ load, deps, header, empty, onOpenPost }: { load: (af
   }, [fetchPage])
   const open = useCallback((p: Post) => (onOpenPost ? onOpenPost(p) : go('Thread', { id: p.id, post: p })), [onOpenPost])
   return (
+    <OnScreenContext.Provider value={onScreen.store}>
     <View style={{ flex: 1 }} onLayout={(e: LayoutChangeEvent) => setWidth(Math.min(e.nativeEvent.layout.width, 860))}>
       <FlatList
         data={items}
+        {...onScreen.props}
         keyExtractor={(x) => x.name}
         contentContainerStyle={{ alignItems: 'stretch', paddingBottom: dock }}
         renderItem={({ item }) => (
@@ -96,5 +100,6 @@ export function ThingList({ load, deps, header, empty, onOpenPost }: { load: (af
         refreshControl={Platform.OS === 'web' ? undefined : <RefreshControl refreshing={refreshing} onRefresh={() => (setRefreshing(true), void fetchPage(false, null))} tintColor={colors.accentHi} />}
       />
     </View>
+    </OnScreenContext.Provider>
   )
 }

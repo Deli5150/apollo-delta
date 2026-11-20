@@ -16,6 +16,7 @@ import { go } from '../nav'
 import { fail } from '../ui/actions'
 import { Avatar, Button, Empty, ErrorView, Header, IconButton, Loading } from '../ui/kit'
 import { showMenu } from '../ui/overlays'
+import { OnScreenContext, useOnScreenTracking } from '../ui/media'
 import { PostCard } from '../ui/PostCard'
 import { SignInButtons } from '../ui/SignIn'
 import { colors, fs, MAX_WIDTH } from '../ui/theme'
@@ -93,6 +94,7 @@ export function Feed({ feed, onOpen, selected, left, showBack }: FeedProps) {
   const req = useRef(0)
   const list = useRef<FlatList<Post>>(null)
   const dock = useDockSpace()
+  const onScreen = useOnScreenTracking()
   const wide = useWide()
   const sub = isSubreddit(feed)
 
@@ -238,12 +240,14 @@ export function Feed({ feed, onOpen, selected, left, showBack }: FeedProps) {
     )
 
   return (
+    <OnScreenContext.Provider value={onScreen.store}>
     <View style={{ flex: 1 }} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
       {header}
       <FlatList
         ref={list}
         data={shown}
         contentContainerStyle={{ paddingBottom: dock }}
+        {...onScreen.props}
         keyExtractor={(p) => p.name}
         renderItem={({ item }) => (
           <View style={{ width: '100%', maxWidth: MAX_WIDTH, alignSelf: 'center' }}>
@@ -266,10 +270,13 @@ export function Feed({ feed, onOpen, selected, left, showBack }: FeedProps) {
         onEndReached={() => after && !error && void load(true, after)}
         onEndReachedThreshold={1.5}
         refreshControl={Platform.OS === 'web' ? undefined : <RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.accentHi} />}
-        initialNumToRender={6}
-        windowSize={wide ? 7 : 9}
+        initialNumToRender={4}
+        maxToRenderPerBatch={3}
+        updateCellsBatchingPeriod={60}
+        windowSize={7}
         removeClippedSubviews={Platform.OS === 'android'}
       />
     </View>
+    </OnScreenContext.Provider>
   )
 }
