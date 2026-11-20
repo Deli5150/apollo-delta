@@ -23,6 +23,8 @@ export function MediaViewerHost() {
   // What's showing: a post's items (and which), which can change as you step through a sequence.
   const [view, setView] = useState<{ items: ViewerItem[]; index: number; post?: Post }>({ items: [], index: 0 })
   const [zoom, setZoom] = useState(false)
+  // The picture's size once loaded (for posts that don't say), so only the picture itself zooms.
+  const [loaded, setLoaded] = useState<{ url: string; w: number; h: number } | null>(null)
   // Gallery View: the post's comments in a panel at the right, which follows the post you're on.
   const [comments, setComments] = useState(false)
   const slide = useRef(new Animated.Value(0)).current
@@ -97,8 +99,8 @@ export function MediaViewerHost() {
         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
         <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: zoom ? 0 : 40 }}>
           {item.kind === 'image' ? (
-            <Pressable onPress={() => setZoom((z) => !z)} style={{ width: zoom ? stageW : stageW - 80, height: zoom ? height : height - 140, ...(Platform.OS === 'web' ? ({ cursor: zoom ? 'zoom-out' : 'zoom-in' } as object) : {}) }}>
-              <Image source={{ uri: item.url }} style={{ width: '100%', height: '100%' }} contentFit={zoom ? 'cover' : 'contain'} transition={100} />
+            <Pressable onPress={() => setZoom((z) => !z)} style={{ ...(zoom ? { width: stageW, height } : fitted(item, loaded, stageW - 80, height - 140)), ...(Platform.OS === 'web' ? ({ cursor: zoom ? 'zoom-out' : 'zoom-in' } as object) : {}) }}>
+              <Image source={{ uri: item.url }} style={{ width: '100%', height: '100%' }} contentFit={zoom ? 'cover' : 'contain'} transition={100} onLoad={(e) => setLoaded({ url: item.url, w: e.source.width, h: e.source.height })} />
             </Pressable>
           ) : (
             <View style={{ width: stageW - 80, height: height - 140 }}>
@@ -165,6 +167,14 @@ export function MediaViewerHost() {
       </View>
     </Modal>
   )
+}
+
+/** The box a picture fills inside `w`×`h` without cropping, so the dark bands around it close the viewer. */
+function fitted(item: { url: string; width?: number; height?: number }, loaded: { url: string; w: number; h: number } | null, w: number, h: number) {
+  const size = item.width && item.height ? { w: item.width, h: item.height } : loaded?.url === item.url ? loaded : null
+  if (!size || !size.w || !size.h) return { width: w, height: h }
+  const scale = Math.min(w / size.w, h / size.h)
+  return { width: Math.round(size.w * scale), height: Math.round(size.h * scale) }
 }
 
 function Tool({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
