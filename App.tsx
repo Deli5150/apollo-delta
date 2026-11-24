@@ -17,7 +17,10 @@ import { desktop } from './src/lib/storage'
 import { SIGNED_OUT } from './src/lib/profiles'
 import { useStore } from './src/lib/store'
 import { autoCheck, startUpdater, useUpdate } from './src/lib/updater'
-import { nav, type RootParams } from './src/nav'
+import { startAppIcon } from './src/lib/appIcon'
+import { nav, openIncoming, type RootParams } from './src/nav'
+import * as Linking from 'expo-linking'
+import DeltaReddit from './modules/delta-reddit/src/DeltaRedditModule'
 import About, { Wiki } from './src/screens/About'
 import Compose from './src/screens/Compose'
 import Gallery from './src/screens/Gallery'
@@ -142,6 +145,23 @@ function InboxWatcher() {
   return null
 }
 
+/** Android: Reddit links opened with the app, or shared to it, open in the app (issue #6). */
+function IncomingLinks() {
+  useEffect(() => {
+    if (Platform.OS !== 'android') return
+    void Linking.getInitialURL().then((url) => url && openIncoming(url))
+    const shared = DeltaReddit?.takeSharedText()
+    if (shared) openIncoming(shared)
+    const link = Linking.addEventListener('url', (e) => openIncoming(e.url))
+    const share = DeltaReddit?.addListener('onShare', (e) => openIncoming(e.text))
+    return () => {
+      link.remove()
+      share?.remove()
+    }
+  }, [])
+  return null
+}
+
 /** Desktop keyboard shortcuts: ⌘1–5 switch tabs, ⌘F opens search, ⌘, settings. */
 function Shortcuts() {
   useEffect(() => {
@@ -198,6 +218,7 @@ export default function App() {
   useEffect(() => {
     void useStore.getState().hydrate()
     startUpdater()
+    startAppIcon()
   }, [])
 
   useEffect(() => {
@@ -265,6 +286,7 @@ export default function App() {
       )}
       {ready && <UpdatePrompt />}
       {ready && <InboxWatcher />}
+      {ready && <IncomingLinks />}
       <Shortcuts />
       <MediaViewerHost />
       <BrowserSignInHost />

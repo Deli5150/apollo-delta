@@ -2,6 +2,18 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; notes: string[] }> = [
   {
+    version: '1.0.2',
+    date: 'November 2026',
+    notes: [
+      'Summarize Comments (Android): a short summary of a post’s comments, written on your phone by a free open-source AI model. The first time, it’s a one-time 1.1 GB download.',
+      'Swipe left or right in the full-screen viewer to go to the next or previous picture, video or post.',
+      'Share from the full-screen viewer: the post’s link, or the picture or video itself.',
+      'Turn your phone sideways while viewing pictures and videos.',
+      'Open Reddit links in Apollo Delta: share a link to it, or turn on Open Reddit Links Here in Settings → General.',
+      'New app icons: eight art styles and five new colours, in Settings → App Icon. Android now changes its icon too.'
+    ]
+  },
+  {
     version: '1.0.1',
     date: 'November 2026',
     notes: [

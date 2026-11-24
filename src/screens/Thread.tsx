@@ -19,6 +19,8 @@ import { Html } from '../ui/Html'
 import { Avatar, Empty, ErrorView, Header, IconButton, Loading, Pill, Screen } from '../ui/kit'
 import { hasMedia, PostMedia } from '../ui/media'
 import { showMenu } from '../ui/overlays'
+import { summariesAvailable } from '../lib/summarizer'
+import { SummaryCard } from '../ui/SummaryCard'
 import { FlairPill, ScoreButton, Time } from '../ui/PostCard'
 import { colors, fs } from '../ui/theme'
 
@@ -415,6 +417,7 @@ export function ThreadView({ id, focus: focus0, initial, embedded, onClose, hide
           ListHeaderComponent={
             <View>
               <PostHeader post={post} width={width} commentSort={sort} onSort={sortMenu} hideMedia={hideMedia} />
+              {summariesAvailable && comments && !focus && <SummaryCard post={post} comments={comments} />}
               {focus && (
                 <Pressable onPress={() => setFocus(undefined)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: 12, backgroundColor: colors.accentSoft, marginTop: 8 }}>
                   <Ionicons name="chatbubbles" size={15} color={colors.accentHi} />

@@ -235,14 +235,16 @@ ipcMain.on('copy-image', async (_e, url) => {
 
 const ICON = () => path.join(app.getPath('userData'), 'app-icon.png')
 function applyIcon() {
-  if (process.platform !== 'darwin' || !fs.existsSync(ICON())) return
-  app.dock?.setIcon(nativeImage.createFromPath(ICON()))
+  if (!fs.existsSync(ICON())) return
+  if (process.platform === 'darwin') app.dock?.setIcon(nativeImage.createFromPath(ICON()))
+  else win?.setIcon(nativeImage.createFromPath(ICON()))
 }
 ipcMain.handle('icon:set', (_e, dataUrl) => {
   if (dataUrl) fs.writeFileSync(ICON(), Buffer.from(dataUrl.split(',')[1], 'base64'))
   else fs.rmSync(ICON(), { force: true })
   if (dataUrl) applyIcon()
   else if (process.platform === 'darwin') app.dock?.setIcon(nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')))
+  else win?.setIcon(nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')))
 })
 
 // ── Reddit ───────────────────────────────────────────────────────────────────────────────────

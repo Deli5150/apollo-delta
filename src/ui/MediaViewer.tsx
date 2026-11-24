@@ -1,14 +1,16 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image } from 'expo-image'
-import { useEffect, useRef, useState } from 'react'
+import * as ScreenOrientation from 'expo-screen-orientation'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Animated, Easing, Modal, PanResponder, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { GestureDetector, GestureHandlerRootView, usePanGesture } from 'react-native-gesture-handler'
+import { scheduleOnRN } from 'react-native-worklets'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { compact } from '../lib/format'
+import { compact, redditUrl } from '../lib/format'
 import { desktop } from '../lib/storage'
 import { go, nav } from '../nav'
 import { ThreadView } from '../screens/Thread'
-import { copy, fail } from './actions'
+import { copy, fail, share, shareMedia } from './actions'
 import type { Post } from '../lib/reddit/types'
 import { useViewer, viewerItems, type ViewerItem } from './media'
 import { colors } from './theme'
@@ -18,7 +20,8 @@ import { ZoomImage } from './ZoomImage'
 
 // The full-screen media viewer: pictures (pinch or double-tap to zoom on phones, click on desktop; tap around to close), galleries (arrow keys / buttons),
 // videos with controls; save, copy, open the post's comments (from Gallery View, in a panel at the
-// right that follows the arrow keys from post to post).
+// right that follows the arrow keys from post to post). Phones swipe sideways instead of the arrows,
+// can turn sideways while it's open, and share the post or the picture/video itself.
 
 export function MediaViewerHost() {
   const open = useViewer((s) => s.open)
@@ -37,6 +40,13 @@ export function MediaViewerHost() {
   const drag = useRef(new Animated.Value(0)).current
   const insets = useSafeAreaInsets()
   const [box, setBox] = useState<{ w: number; h: number } | null>(null)
+  // Phones: the Share choices (the post, or the picture/video itself).
+  const [sharing, setSharing] = useState(false)
+  // Phones turn sideways only while the viewer is open; the rest of the app stays upright.
+  useEffect(() => {
+    if (Platform.OS === 'web') return
+    void (open ? ScreenOrientation.unlockAsync() : ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)).catch(() => undefined)
+  }, [open])
   useEffect(() => {
     if (open) setView({ items: open.items, index: open.index, post: open.post })
     // Every opening starts with the comments put away. (Closed with the sheet up, its slide-out
@@ -46,6 +56,7 @@ export function MediaViewerHost() {
     slide.setValue(0)
     drag.setValue(0)
     setZoom(false)
+    setSharing(false)
   }, [open, slide, drag])
   useEffect(() => {
     if (comments) {
@@ -85,6 +96,16 @@ export function MediaViewerHost() {
     const n = neighbour(d)
     if (n) setView({ items: n.items, post: n.post, index: d > 0 ? 0 : n.items.length - 1 })
   }
+  // Swipes come from the gesture worklets, which keep the callback they started with: they go through
+  // this (always the latest go2).
+  const latestGo = useRef(go2)
+  useEffect(() => {
+    latestGo.current = go2
+  })
+  const swipe = useCallback((d: 1 | -1) => {
+    setSharing(false)
+    latestGo.current(d)
+  }, [])
   const position = (() => {
     if (!sequence || !post) return null
     const posts = sequence.posts()
@@ -138,13 +159,17 @@ export function MediaViewerHost() {
         <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
         <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           {item.kind === 'image' && phone ? (
-            <ZoomImage key={item.url} uri={item.url} {...fitted(item, loaded, room.w, room.h)} stageW={stageW} stageH={H} onClose={close} onLoad={(e) => setLoaded({ url: item.url, w: e.source.width, h: e.source.height })} />
+            <ZoomImage key={item.url} uri={item.url} {...fitted(item, loaded, room.w, room.h)} stageW={stageW} stageH={H} onClose={close} onSwipe={swipe} onLoad={(e) => setLoaded({ url: item.url, w: e.source.width, h: e.source.height })} />
           ) : item.kind === 'image' ? (
             <Pressable onPress={() => setZoom((z) => !z)} style={{ ...(zoom ? { width: stageW, height: H } : fitted(item, loaded, room.w, room.h)), ...(Platform.OS === 'web' ? ({ cursor: zoom ? 'zoom-out' : 'zoom-in' } as object) : {}) }}>
               <Image source={{ uri: item.url }} style={{ width: '100%', height: '100%' }} contentFit={zoom ? 'cover' : 'contain'} allowDownscaling={false} transition={100} onLoad={(e) => setLoaded({ url: item.url, w: e.source.width, h: e.source.height })} />
             </Pressable>
+          ) : phone ? (
+            <SwipeArea onSwipe={swipe} style={{ position: 'absolute', left: 0, right: 0, top: top + 52, bottom: post ? bottom + 76 : bottom }}>
+              <Video hls={item.hls} mp4={item.mp4} poster={item.poster} autoPlay muted={false} loop controls />
+            </SwipeArea>
           ) : (
-            <View style={phone ? { position: 'absolute', left: 0, right: 0, top: top + 52, bottom: post ? bottom + 76 : bottom } : { width: stageW - 80, height: H - 140 }}>
+            <View style={{ width: stageW - 80, height: H - 140 }}>
               <Video hls={item.hls} mp4={item.mp4} poster={item.poster} autoPlay muted={false} loop controls />
             </View>
           )}
@@ -154,8 +179,8 @@ export function MediaViewerHost() {
             <Text style={{ color: '#fff', fontSize: 14, backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 8 }}>{item.caption}</Text>
           </View>
         )}
-        {canBack && <Arrow icon="chevron-back" side="left" onPress={() => go2(-1)} />}
-        {canForward && <Arrow icon="chevron-forward" side="right" onPress={() => go2(1)} />}
+        {!phone && canBack && <Arrow icon="chevron-back" side="left" onPress={() => go2(-1)} />}
+        {!phone && canForward && <Arrow icon="chevron-forward" side="right" onPress={() => go2(1)} />}
         {(items.length > 1 || position) && (
           <Text style={{ position: 'absolute', top: top + 11, alignSelf: 'center', color: '#fff', fontWeight: '700', textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 4 }}>
             {position ? `Post ${position.at} of ${position.of}` : ''}
@@ -166,10 +191,19 @@ export function MediaViewerHost() {
         <View style={{ position: 'absolute', top, right: 10, flexDirection: 'row', gap: 4 }}>
           {desktop && <Tool icon="download-outline" label="Save" onPress={() => void desktop!.saveMedia(url).then(() => toast('Saved to Downloads')).catch(fail)} />}
           {desktop && item.kind === 'image' && <Tool icon="copy-outline" label="Copy Image" onPress={() => (desktop!.copyImage(url), toast('Image copied'))} />}
+          {phone && <Tool icon="share-outline" label="Share" onPress={() => (post ? setSharing((v) => !v) : void shareMedia(url, item.kind))} />}
           <Tool icon="link-outline" label="Copy Link" onPress={() => void copy(url)} />
-          {inGallery && post && <Tool icon={comments ? 'chatbubbles' : 'chatbubbles-outline'} label={comments ? 'Hide Comments' : 'Show Comments'} onPress={openComments} />}
+          {/* Phones open the comments from the post bar at the bottom; the corner has Share instead. */}
+          {!phone && inGallery && post && <Tool icon={comments ? 'chatbubbles' : 'chatbubbles-outline'} label={comments ? 'Hide Comments' : 'Show Comments'} onPress={openComments} />}
           <Tool icon="close" label="Close" onPress={close} />
         </View>
+        {sharing && post && (
+          <View style={{ position: 'absolute', top: top + 50, right: 10, minWidth: 220, borderRadius: 14, overflow: 'hidden', backgroundColor: 'rgba(30,30,36,0.97)' }}>
+            <ShareChoice icon="document-text-outline" label="Share Post" onPress={() => (setSharing(false), void share(redditUrl(post.permalink), post.title))} />
+            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            <ShareChoice icon={item.kind === 'video' ? 'videocam-outline' : 'image-outline'} label={item.kind === 'video' ? 'Share Video' : 'Share Picture'} onPress={() => (setSharing(false), void shareMedia(url, item.kind))} />
+          </View>
+        )}
         {post && (
           <Pressable key={post.name} onPress={openComments} style={{ position: 'absolute', bottom, left: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 14, backgroundColor: 'rgba(30,30,36,0.85)', maxWidth: 720, alignSelf: 'center' }}>
             <View style={{ flex: 1 }}>
@@ -242,6 +276,34 @@ function fitted(item: { url: string; width?: number; height?: number }, loaded: 
   if (!size || !size.w || !size.h) return { width: w, height: h }
   const scale = Math.min(w / size.w, h / size.h)
   return { width: Math.round(size.w * scale), height: Math.round(size.h * scale) }
+}
+
+/** Phones: a sideways swipe over a video goes to the previous or next item; taps reach its controls. */
+function SwipeArea({ onSwipe, style, children }: { onSwipe: (d: 1 | -1) => void; style: object; children: React.ReactNode }) {
+  const pan = usePanGesture({
+    activeOffsetX: [-24, 24],
+    failOffsetY: [-20, 20],
+    onDeactivate: (e) => {
+      'worklet'
+      if (Math.abs(e.translationX) > 70 || Math.abs(e.velocityX) > 650) scheduleOnRN(onSwipe, e.translationX < 0 ? 1 : -1)
+    }
+  })
+  return (
+    <GestureDetector gesture={pan}>
+      <View collapsable={false} style={style}>
+        {children}
+      </View>
+    </GestureDetector>
+  )
+}
+
+function ShareChoice({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13, backgroundColor: pressed ? 'rgba(255,255,255,0.08)' : 'transparent' })}>
+      <Ionicons name={icon} size={20} color="#fff" />
+      <Text style={{ color: '#fff', fontSize: 15 }}>{label}</Text>
+    </Pressable>
+  )
 }
 
 function Tool({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {

@@ -6,12 +6,17 @@ import { scheduleOnRN } from 'react-native-worklets'
 
 // Phones: a picture in the media viewer you can pinch to zoom (1×–6×), drag around once zoomed,
 // and double-tap to zoom in on a spot (or back out). A tap beside the picture closes the viewer.
+// Unzoomed, a sideways swipe goes to the previous or next picture (or post), the picture following
+// your finger on the way.
 // The gestures run on the UI thread, so zooming stays smooth while the app is busy.
 
 const MAX = 6
 const SPRING = { damping: 22, stiffness: 240, mass: 0.7 }
+/** How far (or how fast) a sideways swipe must go to move on. */
+const SWIPE_DISTANCE = 70
+const SWIPE_VELOCITY = 650
 
-export function ZoomImage({ uri, width, height, stageW, stageH, onClose, onLoad }: { uri: string; width: number; height: number; stageW: number; stageH: number; onClose: () => void; onLoad?: (e: ImageLoadEventData) => void }) {
+export function ZoomImage({ uri, width, height, stageW, stageH, onClose, onLoad, onSwipe }: { uri: string; width: number; height: number; stageW: number; stageH: number; onClose: () => void; onLoad?: (e: ImageLoadEventData) => void; onSwipe?: (d: 1 | -1) => void }) {
   const scale = useSharedValue(1)
   const tx = useSharedValue(0)
   const ty = useSharedValue(0)
@@ -80,13 +85,22 @@ export function ZoomImage({ uri, width, height, stageW, stageH, onClose, onLoad 
     },
     onUpdate: (e) => {
       'worklet'
-      if (scale.value <= 1.01) return
+      if (scale.value <= 1.01) {
+        // Unzoomed: the picture follows a sideways swipe.
+        if (onSwipe && Math.abs(e.translationX) > Math.abs(e.translationY)) tx.value = e.translationX
+        return
+      }
       tx.value = x0.value + e.translationX
       ty.value = y0.value + e.translationY
     },
     onDeactivate: (e) => {
       'worklet'
-      if (scale.value <= 1.01) return
+      if (scale.value <= 1.01) {
+        const sideways = Math.abs(e.translationX) > Math.abs(e.translationY) * 1.2
+        if (onSwipe && sideways && (Math.abs(e.translationX) > SWIPE_DISTANCE || Math.abs(e.velocityX) > SWIPE_VELOCITY)) scheduleOnRN(onSwipe, e.translationX < 0 ? 1 : -1)
+        tx.value = withSpring(0, SPRING)
+        return
+      }
       const m = limit(scale.value)
       tx.value = withDecay({ velocity: e.velocityX, clamp: [-m.x, m.x] })
       ty.value = withDecay({ velocity: e.velocityY, clamp: [-m.y, m.y] })

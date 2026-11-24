@@ -1,0 +1,107 @@
+[
+  {
+    "id": "default",
+    "name": "Delta",
+    "group": "Colours"
+  },
+  {
+    "id": "midnight",
+    "name": "Midnight",
+    "group": "Colours"
+  },
+  {
+    "id": "sunrise",
+    "name": "Sunrise",
+    "group": "Colours"
+  },
+  {
+    "id": "mint",
+    "name": "Mint",
+    "group": "Colours"
+  },
+  {
+    "id": "grape",
+    "name": "Grape",
+    "group": "Colours"
+  },
+  {
+    "id": "mono",
+    "name": "Mono",
+    "group": "Colours"
+  },
+  {
+    "id": "light",
+    "name": "Daylight",
+    "group": "Colours"
+  },
+  {
+    "id": "nebula",
+    "name": "Nebula",
+    "group": "Colours"
+  },
+  {
+    "id": "ember",
+    "name": "Ember",
+    "group": "Colours"
+  },
+  {
+    "id": "ocean",
+    "name": "Ocean",
+    "group": "Colours"
+  },
+  {
+    "id": "forest",
+    "name": "Forest",
+    "group": "Colours"
+  },
+  {
+    "id": "gold",
+    "name": "Gold",
+    "group": "Colours"
+  },
+  {
+    "id": "sakura",
+    "name": "Sakura",
+    "group": "Colours"
+  },
+  {
+    "id": "art-pixel",
+    "name": "Pixel Art",
+    "group": "Art Styles"
+  },
+  {
+    "id": "art-watercolor",
+    "name": "Watercolour",
+    "group": "Art Styles"
+  },
+  {
+    "id": "art-oil",
+    "name": "Oil Paint",
+    "group": "Art Styles"
+  },
+  {
+    "id": "art-neon",
+    "name": "Neon Sign",
+    "group": "Art Styles"
+  },
+  {
+    "id": "art-paper",
+    "name": "Paper Cut-Out",
+    "group": "Art Styles"
+  },
+  {
+    "id": "art-blueprint",
+    "name": "Blueprint",
+    "group": "Art Styles"
+  },
+  {
+    "id": "art-glass",
+    "name": "Stained Glass",
+    "group": "Art Styles"
+  },
+  {
+    "id": "art-synth",
+    "name": "Synthwave",
+    "group": "Art Styles"
+  }
+]

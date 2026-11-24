@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useEffect, useState, type ReactNode } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Platform, Pressable, Text, View } from 'react-native'
+import DeltaReddit from '../../modules/delta-reddit/src/DeltaRedditModule'
+import { checkModel, deleteModel, MODEL, summariesAvailable, useSummaries } from '../lib/summarizer'
 import { useShallow } from 'zustand/react/shallow'
 import { CHANGELOG } from '../data/changelog'
 import { useSubs } from '../lib/feeds'
@@ -18,7 +20,8 @@ import { checkForUpdates, useUpdate } from '../lib/updater'
 import { VERSION } from '../version'
 import { go, openExternal, type RootParams } from '../nav'
 import { copy, fail } from '../ui/actions'
-import { AppIcon, ICONS, iconPng } from '../ui/AppIcon'
+import { AppIcon, dockIcon, ICONS, SECRET_ICONS, type IconGroup } from '../ui/AppIcon'
+import { appIconChanged } from '../lib/appIcon'
 import { Avatar, Button, Empty, Field, Group, Header, Page, Row, Screen, Segmented, Sep, ToggleRow } from '../ui/kit'
 import { confirm, showMenu } from '../ui/overlays'
 import { colors, fs, THEMES } from '../ui/theme'
@@ -183,6 +186,8 @@ function Accounts() {
 function General() {
   const [defaultFeed, setDefaultFeed] = useSetting('defaultFeed')
   const subs = useSubs((s) => s.subs)
+  const model = useSummaries((s) => s.model)
+  useEffect(() => void checkModel(), [])
   return (
     <Page>
       <Group title="Startup">
@@ -207,6 +212,16 @@ function General() {
           ]}
         </Rows>
       </Group>
+      {Platform.OS === 'android' && DeltaReddit ? (
+        <Group title="Links From Other Apps" footer="Android lets only Reddit's own app open Reddit links by itself. Turn on “Open supported links” and add the reddit.com links there, and links from other apps and your browser open here. Sharing a Reddit link to Apollo Delta works either way.">
+          <Row icon="link" iconColor="#4b6bff" title="Open Reddit Links Here" sub="Opens Android's Open by default settings." onPress={() => DeltaReddit?.openLinkSettings()} />
+        </Group>
+      ) : null}
+      {summariesAvailable && model === 'ready' ? (
+        <Group title="Comment Summaries" footer={`Summaries are written on this phone by ${MODEL.name}, an open-source AI model. Deleting it frees ${(MODEL.bytes / 1e9).toFixed(1)} GB; Summarize Comments offers to download it again.`}>
+          <Row icon="trash" iconColor={colors.danger} title="Delete the AI Model" onPress={() => confirm('Delete the AI model?', `Frees ${(MODEL.bytes / 1e9).toFixed(1)} GB. You can download it again from any thread.`, 'Delete', () => void deleteModel().then(() => toast('Model deleted')))} />
+        </Group>
+      ) : null}
     </Page>
   )
 }
@@ -255,23 +270,29 @@ function AppIconPage() {
   const unlocked = useStore((s) => s.settings.pixelPal === 'unlocked')
   const pick = async (id: string) => {
     setIcon(id)
-    if (!desktop) return toast('Alternate icons come with the phone app.')
-    const style = ICONS.find((i) => i.id === id)!
-    await desktop.setIcon(id === 'default' ? null : await iconPng(style))
+    if (!desktop) {
+      appIconChanged()
+      return toast('The new icon appears when you leave Apollo Delta')
+    }
+    await desktop.setIcon(id === 'default' ? null : await dockIcon(id))
     toast(desktop.platform === 'darwin' ? 'Dock icon changed' : 'Icon changed (shows on the taskbar while Apollo Delta is open)')
   }
-  const packs = ['Standard', 'Community', ...(unlocked ? ['Secret'] : [])] as const
+  const groups: Array<{ group: IconGroup | 'Secret'; title: string }> = [
+    { group: 'Colours', title: 'Colors' },
+    { group: 'Art Styles', title: 'Art Styles' },
+    ...(unlocked ? [{ group: 'Secret' as const, title: 'Sekrit' }] : [])
+  ]
   return (
     <Page>
-      {packs.map((pack) => (
-        <Group key={pack} title={pack === 'Secret' ? 'Sekrit' : `${pack} Icons`}>
+      {groups.map(({ group, title }) => (
+        <Group key={group} title={title}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', padding: 10, gap: 12 }}>
-            {ICONS.filter((i) => i.pack === pack).map((i) => (
-              <Pressable key={i.id} onPress={() => void pick(i.id)} style={{ alignItems: 'center', gap: 6, width: 84 }}>
+            {ICONS.filter((i) => (group === 'Secret' ? SECRET_ICONS.has(i.id) : i.group === group && !SECRET_ICONS.has(i.id))).map((i) => (
+              <Pressable key={i.id} onPress={() => void pick(i.id)} accessibilityRole="button" accessibilityLabel={`${i.name} icon`} accessibilityState={{ selected: icon === i.id }} style={{ alignItems: 'center', gap: 6, width: 84 }}>
                 <View style={{ borderRadius: 18, borderWidth: 3, borderColor: icon === i.id ? colors.accent : 'transparent', padding: 2 }}>
-                  <AppIcon style={i} size={64} />
+                  <AppIcon id={i.id} size={64} />
                 </View>
-                <Text style={{ color: icon === i.id ? colors.accentHi : colors.text, fontSize: fs(12.5), fontWeight: '600' }}>{i.name}</Text>
+                <Text numberOfLines={1} style={{ color: icon === i.id ? colors.accentHi : colors.text, fontSize: fs(12.5), fontWeight: '600' }}>{i.name}</Text>
               </Pressable>
             ))}
           </View>
@@ -640,7 +661,7 @@ function AboutPage() {
   return (
     <Page>
       <View style={{ alignItems: 'center', paddingTop: 30, gap: 8 }}>
-        <AppIcon style={ICONS[0]} size={96} />
+        <AppIcon id="default" size={96} />
         <Text style={{ color: colors.text, fontSize: fs(24), fontWeight: '800' }}>Apollo Delta</Text>
         <Text
           onPress={() => {

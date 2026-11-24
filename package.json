@@ -1,6 +1,6 @@
 {
   "name": "apollo-delta",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Apollo Delta — a Reddit client inspired by Apollo, for macOS, Windows and Android. No API key needed.",
   "main": "index.ts",
   "dependencies": {
@@ -10,6 +10,7 @@
     "@react-navigation/native": "^7.5.1",
     "@react-navigation/native-stack": "^7.21.0",
     "expo": "~58.0.25",
+    "expo-asset": "~58.0.21",
     "expo-blur": "~58.0.6",
     "expo-clipboard": "~58.0.4",
     "expo-constants": "~58.0.16",
@@ -30,6 +31,7 @@
     "expo-video": "~58.0.14",
     "expo-web-browser": "~58.1.0",
     "hls.js": "^1.6.15",
+    "llama.rn": "0.12.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-freeze": "1.0.4",
@@ -68,5 +70,8 @@
   },
   "private": true,
   "license": "MIT",
-  "repository": "github:Deli5150/apollo-delta"
+  "repository": "github:Deli5150/apollo-delta",
+  "allowScripts": {
+    "llama.rn@0.12.9": true
+  }
 }

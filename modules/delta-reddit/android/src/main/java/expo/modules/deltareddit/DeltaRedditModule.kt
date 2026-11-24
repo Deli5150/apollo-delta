@@ -1,5 +1,9 @@
 package expo.modules.deltareddit
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.webkit.CookieManager
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
@@ -26,8 +30,37 @@ class DeltaRedditModule : Module() {
       .build()
   }
 
+  /** Text shared to the app (Share → Apollo Delta) that the app hasn't taken yet. */
+  private fun sharedText(intent: Intent?): String? =
+    if (intent?.action == Intent.ACTION_SEND) intent.getStringExtra(Intent.EXTRA_TEXT) else null
+
   override fun definition() = ModuleDefinition {
     Name("DeltaReddit")
+
+    // A Reddit link shared to the app while it's open (one shared to start it: takeSharedText).
+    Events("onShare")
+
+    OnNewIntent { intent ->
+      sharedText(intent)?.let { sendEvent("onShare", mapOf("text" to it)) }
+    }
+
+    // What was shared to start the app, once.
+    Function("takeSharedText") {
+      val activity = appContext.currentActivity ?: return@Function null
+      val text = sharedText(activity.intent)
+      if (text != null) activity.intent = Intent(activity.intent).setAction(Intent.ACTION_MAIN)
+      text
+    }
+
+    // The system page where Reddit links can be set to open here (Open by default → Add links);
+    // Android won't do it by itself for an app that isn't Reddit's own.
+    Function("openLinkSettings") {
+      val context = appContext.reactContext ?: return@Function false
+      val pkg = Uri.parse("package:${context.packageName}")
+      val intent = if (Build.VERSION.SDK_INT >= 31) Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS, pkg) else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg)
+      context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+      true
+    }
 
     // The cookies the WebView holds for a URL, as a Cookie header ("a=1; b=2").
     Function("getCookies") { url: String ->

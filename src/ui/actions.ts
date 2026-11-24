@@ -1,4 +1,6 @@
 import * as Clipboard from 'expo-clipboard'
+import { cacheDirectory, downloadAsync } from 'expo-file-system/legacy'
+import * as Sharing from 'expo-sharing'
 import { Platform, Share } from 'react-native'
 import * as api from '../lib/reddit/api'
 import { myName } from '../lib/reddit/transport'
@@ -25,6 +27,27 @@ export async function copy(text: string, what = 'Link'): Promise<void> {
 export async function share(url: string, title?: string): Promise<void> {
   if (Platform.OS === 'web') return copy(url)
   await Share.share({ message: url, title })
+}
+
+/**
+ * Phones: shares a picture or video itself (downloaded first), for apps that take the file rather
+ * than a link. Falls back to the link when it can't be fetched as a file (streamed-only videos).
+ */
+export async function shareMedia(url: string, kind: 'image' | 'video'): Promise<void> {
+  if (Platform.OS === 'web') return copy(url)
+  const name = url.split('?')[0].split('/').pop() || 'media'
+  const ext = /\.(jpe?g|png|webp|gif|mp4)$/i.exec(name)?.[0] ?? (kind === 'video' ? '.mp4' : '.jpg')
+  const file = `${cacheDirectory}share-${Date.now()}${ext}`
+  try {
+    if (!(await Sharing.isAvailableAsync()) || /\.m3u8/i.test(url)) throw new Error('no file')
+    toast(kind === 'video' ? 'Getting the video…' : 'Getting the picture…')
+    const res = await downloadAsync(url, file)
+    if (res.status !== 200) throw new Error(`HTTP ${res.status}`)
+    const mimeType = ext === '.mp4' ? 'video/mp4' : ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.gif' ? 'image/gif' : 'image/jpeg'
+    await Sharing.shareAsync(res.uri, { mimeType })
+  } catch {
+    await share(url)
+  }
 }
 
 export const doVote = (t: Post | Comment, dir: 1 | -1) => vote(t, dir).catch(fail)

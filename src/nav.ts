@@ -4,6 +4,7 @@ import type { Message, Post } from './lib/reddit/types'
 import { desktop } from './lib/storage'
 import { transport, useSession } from './lib/reddit/transport'
 import { openViewer } from './ui/media'
+import { toast } from './ui/toast'
 
 export type ComposeParams =
   | { mode: 'reply'; parent: string; parentAuthor?: string; quote?: string; postId?: string }
@@ -83,8 +84,22 @@ export function openExternal(url: string): void {
   else void Linking.openURL(url)
 }
 
+/**
+ * A link the app was opened with or a text shared to it (Android): its Reddit link opens here once
+ * the screens are ready. Other links (apollodelta://demo) and text without a Reddit link are left alone.
+ */
+export function openIncoming(text: string, tries = 0): void {
+  const url = text.match(/https?:\/\/[^\s<>"']+/i)?.[0]
+  if (!url || !(parseRedditLink(url) || /^https?:\/\/v\.redd\.it\//i.test(url))) return
+  if (!nav.isReady()) {
+    if (tries < 50) setTimeout(() => openIncoming(text, tries + 1), 200)
+    return
+  }
+  void openUrl(url, true)
+}
+
 /** Opens a link: Reddit pages in the app, pictures in the viewer, the rest in your browser. */
-export async function openUrl(url: string): Promise<void> {
+export async function openUrl(url: string, fromOutside = false): Promise<void> {
   const target = parseRedditLink(url)
   if (target?.kind === 'post') return go('Thread', { id: target.id, focus: target.focus })
   if (target?.kind === 'feed') return go('Feed', { feed: target.feed })
@@ -93,6 +108,8 @@ export async function openUrl(url: string): Promise<void> {
   if (target?.kind === 'share' || /^https?:\/\/v\.redd\.it\//i.test(url)) {
     const real = await resolveRedirect(url)
     if (real && parseRedditLink(real)?.kind !== 'share') return openUrl(real)
+    // From outside, the browser would hand the link straight back to the app.
+    if (fromOutside) return toast("Couldn't open that link")
     return openExternal(url)
   }
   if (IMAGE.test(url)) {
