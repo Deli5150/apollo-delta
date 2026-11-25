@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.3] - 2026-11-24
+
+- Replying no longer closes the app on Android. Reddit sometimes answers a new reply without its author or text, and showing that reply crashed the app; it now fills them in from what you wrote. If a page ever hits a problem, you get a "Something went wrong" screen with Try Again and Report It, instead of the app closing (#10).
+- Writing a reply on phones: the text box fills the screen, so you can tap anywhere to start typing; the formatting toolbar stays above the keyboard; and Send is at the right of the toolbar, just above the keyboard (#9).
+- Save pictures and videos (Android): Share in the full-screen viewer now has Save Picture / Save Video, which saves to your gallery. Videos from Reddit keep their sound, both when saved and when shared as a file (#8).
+- Swiping over the empty space around a picture or video in the viewer goes to the next or previous one instead of closing the viewer. Only a tap closes it (#11).
+- Summarize Comments: the summary no longer gets stuck repeating a word. If the model starts looping anyway, it's stopped and you keep what it wrote before. There's a Stop button while it writes, and once it's done, tap its title to fold it away and back (#7).
+- Messages like "Picture saved" now show over the full-screen viewer on Android.
+
 ## [1.0.2] - 2026-11-23
 
 - Summarize Comments (Android): under a post's comments, get a short summary of what everyone is saying. It's written on your phone by Qwen2.5 1.5B, a free open-source AI model, so nothing is sent anywhere. The model is a one-time 1.1 GB download the first time; Settings → General can delete it (#5).

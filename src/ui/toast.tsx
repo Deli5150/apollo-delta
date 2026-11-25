@@ -24,7 +24,8 @@ export function toast(text: string, undo?: () => void): void {
   timer = setTimeout(() => useToast.setState((s) => (s.toast?.id === id ? { toast: null } : s)), 4500)
 }
 
-export function ToastHost() {
+/** `bottom`: where it sits, for a host inside a full-screen Modal (on Android a Modal covers the app's own host). */
+export function ToastHost({ bottom }: { bottom?: number } = {}) {
   const t = useToast((s) => s.toast)
   const insets = useSafeAreaInsets()
   const wide = useWide()
@@ -36,7 +37,7 @@ export function ToastHost() {
   }, [t?.id, y])
   if (!t) return null
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: wide ? 24 : Math.max(insets.bottom + 20, dock + 8), alignItems: 'center' }}>
+    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: bottom ?? (wide ? 24 : Math.max(insets.bottom + 20, dock + 8)), alignItems: 'center' }}>
       <Animated.View
         style={{
           flexDirection: 'row',

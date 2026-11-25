@@ -132,7 +132,7 @@ export function post(d: Raw, me?: string): Post {
     id: d.id,
     name: d.name,
     title: decode(d.title),
-    author: d.author,
+    author: d.author ?? '[deleted]',
     authorId: d.author_fullname ?? undefined,
     authorFlair: flair(d.author_flair_text, d.author_flair_richtext, d.author_flair_background_color, d.author_flair_text_color),
     distinguished: d.distinguished ?? null,
@@ -171,6 +171,41 @@ export function post(d: Raw, me?: string): Post {
     pollTotal: d.poll_data?.total_vote_count,
     mediaMetadata: mediaMetadata(d.media_metadata)
   }
+}
+
+/**
+ * The comment Reddit hands back after you post or edit one (/api/comment, /api/editusertext). It's
+ * usually a full comment, but Reddit can also answer in an older, shorter shape (id, parent, link,
+ * contentText, contentHTML) with no author or body: drawing that one crashed the app on Android
+ * (issue #10). Either way this returns a whole comment, filling in what's missing from what you sent.
+ */
+export function newComment(d: Raw, me: string, text: string, parent?: string): Comment {
+  if (d.author && typeof d.body === 'string') return comment(d)
+  const name = String(d.name ?? d.id ?? '')
+  const id = name.replace(/^t1_/, '')
+  const body = typeof d.body === 'string' ? d.body : typeof d.contentText === 'string' ? d.contentText : text
+  const given = typeof d.body_html === 'string' ? d.body_html : typeof d.contentHTML === 'string' ? d.contentHTML : ''
+  const html = /^\s*&lt;/.test(given) ? decode(given) : given
+  return comment({
+    ...d,
+    id,
+    name: `t1_${id}`,
+    parent_id: d.parent_id ?? d.parent ?? parent,
+    link_id: d.link_id ?? d.link,
+    author: d.author || me,
+    body,
+    body_html: html || paragraphs(body),
+    score: d.score ?? 1,
+    likes: d.likes ?? true,
+    created_utc: d.created_utc ?? Date.now() / 1000,
+    replies: ''
+  })
+}
+
+/** Plain text as simple HTML paragraphs (for a new comment Reddit didn't send the HTML of). */
+function paragraphs(text: string): string {
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return `<div class="md">${text.split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, '<br/>')}</p>`).join('')}</div>`
 }
 
 export function comment(d: Raw, depthBase = 0): Comment {

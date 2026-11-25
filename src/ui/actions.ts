@@ -1,11 +1,12 @@
 import * as Clipboard from 'expo-clipboard'
-import { cacheDirectory, downloadAsync } from 'expo-file-system/legacy'
+import * as MediaLibrary from 'expo-media-library/legacy'
 import * as Sharing from 'expo-sharing'
 import { Platform, Share } from 'react-native'
 import * as api from '../lib/reddit/api'
 import { myName } from '../lib/reddit/transport'
 import type { Comment, Post } from '../lib/reddit/types'
 import { redditUrl } from '../lib/format'
+import { fetchMedia, type MediaFile } from '../lib/mediaFiles'
 import { desktop } from '../lib/storage'
 import { forgetRead, toggleFavorite, useStore } from '../lib/store'
 import { patched, remove, toggleHide, toggleSave, vote } from '../lib/things'
@@ -30,23 +31,40 @@ export async function share(url: string, title?: string): Promise<void> {
 }
 
 /**
- * Phones: shares a picture or video itself (downloaded first), for apps that take the file rather
- * than a link. Falls back to the link when it can't be fetched as a file (streamed-only videos).
+ * Phones: shares a picture or video itself (downloaded first, Reddit videos with their sound), for
+ * apps that take the file rather than a link. Falls back to the link when it can't be fetched as a
+ * file (streamed-only videos).
  */
 export async function shareMedia(url: string, kind: 'image' | 'video'): Promise<void> {
   if (Platform.OS === 'web') return copy(url)
-  const name = url.split('?')[0].split('/').pop() || 'media'
-  const ext = /\.(jpe?g|png|webp|gif|mp4)$/i.exec(name)?.[0] ?? (kind === 'video' ? '.mp4' : '.jpg')
-  const file = `${cacheDirectory}share-${Date.now()}${ext}`
   try {
-    if (!(await Sharing.isAvailableAsync()) || /\.m3u8/i.test(url)) throw new Error('no file')
+    if (!(await Sharing.isAvailableAsync())) throw new Error('no sharing')
     toast(kind === 'video' ? 'Getting the video…' : 'Getting the picture…')
-    const res = await downloadAsync(url, file)
-    if (res.status !== 200) throw new Error(`HTTP ${res.status}`)
-    const mimeType = ext === '.mp4' ? 'video/mp4' : ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.gif' ? 'image/gif' : 'image/jpeg'
-    await Sharing.shareAsync(res.uri, { mimeType })
+    const file = await fetchMedia(url, kind)
+    await Sharing.shareAsync(file.uri, { mimeType: file.mimeType })
   } catch {
     await share(url)
+  }
+}
+
+/** Phones: saves a picture or video (with its sound) to the phone's gallery (issue #8). */
+export async function saveMedia(url: string, kind: 'image' | 'video'): Promise<void> {
+  if (desktop) {
+    await desktop.saveMedia(url).then(() => toast('Saved to Downloads')).catch(fail)
+    return
+  }
+  let file: MediaFile | null = null
+  try {
+    const perm = await MediaLibrary.requestPermissionsAsync(true)
+    if (!perm.granted) return toast('Allow Apollo Delta to save to your photos in your phone’s Settings to save pictures and videos.')
+    toast(kind === 'video' ? 'Saving the video…' : 'Saving the picture…')
+    file = await fetchMedia(url, kind)
+    await MediaLibrary.saveToLibraryAsync(file.uri)
+    toast(kind === 'video' ? 'Video saved to your gallery' : 'Picture saved to your gallery')
+  } catch (e) {
+    fail(e)
+  } finally {
+    await file?.cleanup()
   }
 }
 

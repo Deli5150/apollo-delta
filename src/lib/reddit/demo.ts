@@ -152,7 +152,7 @@ function feed(sr?: string): Raw {
   return listing(all.map((s) => ({ kind: 't3', data: postRaw(s) })))
 }
 
-function answer(url: string): unknown {
+function answer(url: string, form?: RedditRequest['form']): unknown {
   const u = new URL(url)
   const p = u.pathname.replace(/\.json$/, '').replace(/\/$/, '')
   let m: RegExpMatchArray | null
@@ -177,6 +177,14 @@ function answer(url: string): unknown {
     return listing(SEEDS.filter((s) => s.title.toLowerCase().includes(q) || s.sr.toLowerCase().includes(q)).map((s) => ({ kind: 't3', data: postRaw(s) })))
   }
   if (p === '/users/search') return listing([])
+  // A reply comes back as the new comment, in the short shape Reddit can answer with (no author or
+  // body: see parse.newComment), so the demo exercises that path.
+  if (p === '/api/comment' && form) {
+    const text = String(form.text ?? '')
+    const parent = String(form.thing_id ?? '')
+    const id = `r${Date.now().toString(36)}`
+    return { json: { errors: [], data: { things: [{ kind: 't1', data: { id: `t1_${id}`, parent, link: parent.startsWith('t3_') ? parent : 't3_d1', contentText: text, contentHTML: html(text), content: html(text), replies: '' } }] } } }
+  }
   // Writes (votes, saves, …) just succeed.
   return { json: { errors: [], data: {} } }
 }
@@ -195,7 +203,7 @@ export const demoTransport = {
   async reorder() {},
   async request(_id: string | null, req: RedditRequest): Promise<RedditResponse> {
     await new Promise((r) => setTimeout(r, 120))
-    return { status: 200, url: req.url, json: answer(req.url) } as RedditResponse
+    return { status: 200, url: req.url, json: answer(req.url, req.form) } as RedditResponse
   },
   async upload() {
     return { error: 'Uploads are off in the demo.' }

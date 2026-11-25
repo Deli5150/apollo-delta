@@ -2,6 +2,17 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; notes: string[] }> = [
   {
+    version: '1.0.3',
+    date: 'November 2026',
+    notes: [
+      'Replying no longer closes the app on Android. If a page ever hits a problem, you get a screen to try again or report it instead.',
+      'Writing a reply on phones: the text box fills the screen, the toolbar stays above the keyboard, and Send sits right above the keyboard.',
+      'Save pictures and videos to your gallery from Share in the full-screen viewer. Videos from Reddit keep their sound.',
+      'Swiping over the empty space in the viewer goes to the next or previous picture instead of closing it.',
+      'Summarize Comments no longer gets stuck repeating a word, has a Stop button, and folds away when you tap its title.'
+    ]
+  },
+  {
     version: '1.0.2',
     date: 'November 2026',
     notes: [

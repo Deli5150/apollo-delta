@@ -106,13 +106,14 @@ export async function reply(parent: string, text: string): Promise<Comment | Mes
   const j = await post('/api/comment', { thing_id: parent, text })
   const thing = j?.json?.data?.things?.[0]
   if (!thing) throw new Error('Reddit didn\'t return the new comment.')
-  return thing.kind === 't4' ? parse.message('t4', thing.data) : { ...parse.comment(thing.data), depth: 0 }
+  return thing.kind === 't4' ? parse.message('t4', thing.data) : { ...parse.newComment(thing.data ?? {}, myName() ?? '', text, parent), depth: 0 }
 }
 
 export async function edit(name: string, text: string): Promise<Comment | Post> {
   const j = await post('/api/editusertext', { thing_id: name, text })
   const thing = j?.json?.data?.things?.[0]
-  return thing.kind === 't3' ? parse.post(thing.data, myName()) : parse.comment(thing.data)
+  if (!thing) throw new Error('Reddit didn\'t return the edited text.')
+  return thing.kind === 't3' ? parse.post(thing.data, myName()) : parse.newComment(thing.data ?? {}, myName() ?? '', text)
 }
 
 export interface Submission {

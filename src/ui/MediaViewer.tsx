@@ -3,20 +3,20 @@ import { Image } from 'expo-image'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Animated, Easing, Modal, PanResponder, Platform, Pressable, Text, View, useWindowDimensions } from 'react-native'
-import { GestureDetector, GestureHandlerRootView, usePanGesture } from 'react-native-gesture-handler'
+import { GestureDetector, GestureHandlerRootView, useExclusiveGestures, usePanGesture, useTapGesture } from 'react-native-gesture-handler'
 import { scheduleOnRN } from 'react-native-worklets'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { compact, redditUrl } from '../lib/format'
 import { desktop } from '../lib/storage'
 import { go, nav } from '../nav'
 import { ThreadView } from '../screens/Thread'
-import { copy, fail, share, shareMedia } from './actions'
+import { copy, fail, saveMedia, share, shareMedia } from './actions'
 import type { Post } from '../lib/reddit/types'
 import { useViewer, viewerItems, type ViewerItem } from './media'
 import { colors } from './theme'
-import { toast } from './toast'
+import { toast, ToastHost } from './toast'
 import { Video } from './Video'
-import { ZoomImage } from './ZoomImage'
+import { TAP_SLOP, ZoomImage } from './ZoomImage'
 
 // The full-screen media viewer: pictures (pinch or double-tap to zoom on phones, click on desktop; tap around to close), galleries (arrow keys / buttons),
 // videos with controls; save, copy, open the post's comments (from Gallery View, in a panel at the
@@ -156,7 +156,11 @@ export function MediaViewerHost() {
       <GestureHandlerRootView style={{ flex: 1 }}>
       <View onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })} style={{ flex: 1, flexDirection: 'row', backgroundColor: phone ? '#000' : 'rgba(0,0,0,0.94)' }}>
       <View style={{ width: stageW, height: H }}>
-        <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
+        {phone ? (
+          <Backdrop onTap={close} onSwipe={swipe} />
+        ) : (
+          <Pressable style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onPress={close} />
+        )}
         <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           {item.kind === 'image' && phone ? (
             <ZoomImage key={item.url} uri={item.url} {...fitted(item, loaded, room.w, room.h)} stageW={stageW} stageH={H} onClose={close} onSwipe={swipe} onLoad={(e) => setLoaded({ url: item.url, w: e.source.width, h: e.source.height })} />
@@ -191,17 +195,23 @@ export function MediaViewerHost() {
         <View style={{ position: 'absolute', top, right: 10, flexDirection: 'row', gap: 4 }}>
           {desktop && <Tool icon="download-outline" label="Save" onPress={() => void desktop!.saveMedia(url).then(() => toast('Saved to Downloads')).catch(fail)} />}
           {desktop && item.kind === 'image' && <Tool icon="copy-outline" label="Copy Image" onPress={() => (desktop!.copyImage(url), toast('Image copied'))} />}
-          {phone && <Tool icon="share-outline" label="Share" onPress={() => (post ? setSharing((v) => !v) : void shareMedia(url, item.kind))} />}
+          {phone && <Tool icon="share-outline" label="Share" onPress={() => setSharing((v) => !v)} />}
           <Tool icon="link-outline" label="Copy Link" onPress={() => void copy(url)} />
           {/* Phones open the comments from the post bar at the bottom; the corner has Share instead. */}
           {!phone && inGallery && post && <Tool icon={comments ? 'chatbubbles' : 'chatbubbles-outline'} label={comments ? 'Hide Comments' : 'Show Comments'} onPress={openComments} />}
           <Tool icon="close" label="Close" onPress={close} />
         </View>
-        {sharing && post && (
+        {sharing && (
           <View style={{ position: 'absolute', top: top + 50, right: 10, minWidth: 220, borderRadius: 14, overflow: 'hidden', backgroundColor: 'rgba(30,30,36,0.97)' }}>
-            <ShareChoice icon="document-text-outline" label="Share Post" onPress={() => (setSharing(false), void share(redditUrl(post.permalink), post.title))} />
-            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            {post && (
+              <>
+                <ShareChoice icon="document-text-outline" label="Share Post" onPress={() => (setSharing(false), void share(redditUrl(post.permalink), post.title))} />
+                <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+              </>
+            )}
             <ShareChoice icon={item.kind === 'video' ? 'videocam-outline' : 'image-outline'} label={item.kind === 'video' ? 'Share Video' : 'Share Picture'} onPress={() => (setSharing(false), void shareMedia(url, item.kind))} />
+            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            <ShareChoice icon="download-outline" label={item.kind === 'video' ? 'Save Video' : 'Save Picture'} onPress={() => (setSharing(false), void saveMedia(url, item.kind))} />
           </View>
         )}
         {post && (
@@ -265,6 +275,8 @@ export function MediaViewerHost() {
         </>
       )}
       </View>
+      {/* On Android this Modal covers the app's own toasts ("Picture saved"): show them here too. */}
+      {phone && <ToastHost bottom={bottom + (post ? 76 : 0) + 10} />}
       </GestureHandlerRootView>
     </Modal>
   )
@@ -293,6 +305,35 @@ function SwipeArea({ onSwipe, style, children }: { onSwipe: (d: 1 | -1) => void;
       <View collapsable={false} style={style}>
         {children}
       </View>
+    </GestureDetector>
+  )
+}
+
+/**
+ * Phones: the empty space around a video or picture. A tap closes the viewer; a sideways swipe goes
+ * to the previous or next item, like swiping over the picture itself. (It was a Pressable, which
+ * fires on release even after a swipe, so swiping over empty space closed the viewer: issue #11.)
+ */
+function Backdrop({ onTap, onSwipe }: { onTap: () => void; onSwipe: (d: 1 | -1) => void }) {
+  const pan = usePanGesture({
+    activeOffsetX: [-24, 24],
+    onDeactivate: (e) => {
+      'worklet'
+      const sideways = Math.abs(e.translationX) > Math.abs(e.translationY) * 1.2
+      if (sideways && (Math.abs(e.translationX) > 70 || Math.abs(e.velocityX) > 650)) scheduleOnRN(onSwipe, e.translationX < 0 ? 1 : -1)
+    }
+  })
+  const tap = useTapGesture({
+    maxDistance: TAP_SLOP,
+    onActivate: () => {
+      'worklet'
+      scheduleOnRN(onTap)
+    }
+  })
+  const gesture = useExclusiveGestures(pan, tap)
+  return (
+    <GestureDetector gesture={gesture}>
+      <View collapsable={false} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
     </GestureDetector>
   )
 }

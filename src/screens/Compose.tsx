@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useDockSpace } from '../lib/layout'
+import { useDockSpace, useKeyboard } from '../lib/layout'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
@@ -74,7 +74,11 @@ function FlairPicker({ flairs, selected, onPick }: { flairs: api.LinkFlair[]; se
 
 export default function Compose({ route }: NativeStackScreenProps<RootParams, 'Compose'>) {
   const dock = useDockSpace()
+  const keyboard = useKeyboard((s) => s.height)
   const p = route.params
+  // Phones: Send sits at the right of the toolbar above the keyboard, in reach of your thumb (issue
+  // #9). A new post keeps Post at the top: its title and subreddit come first.
+  const sendInBar = Platform.OS !== 'web' && p.mode !== 'post'
   const [text, setText] = useState(p.mode === 'edit' ? p.text : p.mode === 'reply' && p.quote ? `> ${p.quote}\n\n` : '')
   const [title, setTitle] = useState('')
   const [sr, setSr] = useState(p.mode === 'post' ? (p.sr ?? '') : '')
@@ -161,9 +165,10 @@ export default function Compose({ route }: NativeStackScreenProps<RootParams, 'C
 
   return (
     <Screen>
-      <Header title={heading} right={<Button title={p.mode === 'edit' ? 'Save' : p.mode === 'post' ? 'Post' : 'Send'} onPress={() => void send()} disabled={!ready} loading={sending} style={{ height: 34, marginRight: 6 }} />} />
-      <KeyboardAvoidingView style={{ flex: 1, paddingBottom: dock }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 14, gap: 10, maxWidth: 860, width: '100%', alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
+      <Header title={heading} right={sendInBar ? undefined : <Button title={p.mode === 'edit' ? 'Save' : p.mode === 'post' ? 'Post' : 'Send'} onPress={() => void send()} disabled={!ready} loading={sending} style={{ height: 34, marginRight: 6 }} />} />
+      {/* Android draws edge to edge, so the keyboard covers the page: lift the toolbar above it. */}
+      <KeyboardAvoidingView style={{ flex: 1, paddingBottom: Platform.OS === 'android' && keyboard > 0 ? keyboard : dock }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, padding: 14, gap: 10, maxWidth: 860, width: '100%', alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
           {p.mode === 'message' && (
             <>
               <Field placeholder="To (username)" value={to} onChangeText={setTo} autoCapitalize="none" icon="person-outline" />
@@ -211,7 +216,8 @@ export default function Compose({ route }: NativeStackScreenProps<RootParams, 'C
               placeholder={p.mode === 'post' ? 'Text (optional)' : 'Write something… (Markdown)'}
               placeholderTextColor={colors.faint}
               textAlignVertical="top"
-              style={{ minHeight: 260, color: colors.text, fontSize: fs(15.5), lineHeight: fs(22), padding: 12, backgroundColor: colors.card, borderRadius: 12, fontFamily: font.family, outlineStyle: 'none' } as object}
+              // Fills the rest of the page, so a tap anywhere below the text starts typing (issue #9).
+              style={{ flexGrow: 1, minHeight: p.mode === 'post' ? 260 : 160, color: colors.text, fontSize: fs(15.5), lineHeight: fs(22), padding: 12, backgroundColor: colors.card, borderRadius: 12, fontFamily: font.family, outlineStyle: 'none' } as object}
             />
           )}
         </ScrollView>
@@ -223,6 +229,11 @@ export default function Compose({ route }: NativeStackScreenProps<RootParams, 'C
             <Pressable onPress={() => void pickImage()} accessibilityLabel="Add Image" style={{ padding: 10, borderTopWidth: 1, borderColor: colors.separator }}>
               <Ionicons name={uploading ? 'cloud-upload' : 'image-outline'} size={20} color={colors.accentHi} />
             </Pressable>
+            {sendInBar && (
+              <View style={{ alignSelf: 'stretch', justifyContent: 'center', paddingHorizontal: 8, borderTopWidth: 1, borderColor: colors.separator }}>
+                <Button title={p.mode === 'edit' ? 'Save' : 'Send'} icon={p.mode === 'edit' ? undefined : 'send'} onPress={() => void send()} disabled={!ready} loading={sending} style={{ height: 34 }} />
+              </View>
+            )}
           </View>
         )}
       </KeyboardAvoidingView>

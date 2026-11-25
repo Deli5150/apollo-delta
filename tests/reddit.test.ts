@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { parseHtml, textOf } from '../src/ui/htmlParse'
-import { comment, post } from '../src/lib/reddit/parse'
+import { comment, newComment, post } from '../src/lib/reddit/parse'
 import { isCoolingDown, noteResult, resetRouteHealth, routesFor, routeUrl, setRouteOverrides } from '../src/lib/reddit/routes'
 
 test('hot/new/rising go to oauth first, other sorts to www', () => {
@@ -92,4 +92,30 @@ test('html parser handles Reddit markdown output', () => {
   assert.equal(textOf(tree).replace(/\s+/g, ' ').trim(), 'Hello world & r/pics quote secret')
   const escaped = parseHtml('&lt;div class="md"&gt;&lt;p&gt;x&lt;/p&gt;&lt;/div&gt;')
   assert.equal(textOf(escaped), 'x')
+})
+
+test('a new comment in the full shape is read as is', () => {
+  const c = newComment({ id: 'abc', name: 't1_abc', author: 'someone', body: 'hi', body_html: '<div class="md"><p>hi</p></div>', parent_id: 't3_p', link_id: 't3_p', score: 1, created_utc: 1, replies: '' }, 'me', 'hi')
+  assert.equal(c.author, 'someone')
+  assert.equal(c.body, 'hi')
+  assert.equal(c.name, 't1_abc')
+})
+
+test('a new comment in the short shape gets an author and body (issue #10)', () => {
+  const c = newComment({ id: 't1_abc', parent: 't1_par', link: 't3_p', contentText: 'Nice & tidy', contentHTML: '&lt;div class="md"&gt;&lt;p&gt;Nice &amp;amp; tidy&lt;/p&gt;&lt;/div&gt;', replies: '' }, 'me', 'Nice & tidy')
+  assert.equal(c.author, 'me')
+  assert.equal(c.body, 'Nice & tidy')
+  assert.equal(c.name, 't1_abc')
+  assert.equal(c.id, 'abc')
+  assert.equal(c.parentId, 't1_par')
+  assert.match(c.bodyHtml, /^<div class="md"><p>Nice/)
+  assert.deepEqual(c.replies, [])
+})
+
+test('a new comment with nothing but an id falls back to what was sent', () => {
+  const c = newComment({ id: 'abc' }, 'me', 'line one\n\n<b>two</b>', 't3_p')
+  assert.equal(c.author, 'me')
+  assert.equal(c.body, 'line one\n\n<b>two</b>')
+  assert.equal(c.parentId, 't3_p')
+  assert.equal(c.bodyHtml, '<div class="md"><p>line one</p><p>&lt;b&gt;two&lt;/b&gt;</p></div>')
 })

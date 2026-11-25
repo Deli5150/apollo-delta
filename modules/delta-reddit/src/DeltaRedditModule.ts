@@ -18,6 +18,8 @@ declare class DeltaRedditModule extends NativeModule<{ onShare(e: { text: string
   request(url: string, method: string, headers: Record<string, string>, body: string | null): Promise<NativeResponse>
   takeSharedText(): string | null
   openLinkSettings(): boolean
+  /** Puts the video track of one MP4 and the audio track of another into one MP4 (file paths). */
+  muxVideo(videoPath: string, audioPath: string, outPath: string): Promise<string>
 }
 
 export default requireOptionalNativeModule<DeltaRedditModule>('DeltaReddit')

@@ -9,6 +9,7 @@ interface Summary {
   text: string
   state: 'reading' | 'writing' | 'done' | 'error'
   error?: string
+  folded?: boolean
 }
 export const useSummaries = create<{ model: 'unknown' | 'missing' | 'downloading' | 'ready'; progress: number; error?: string; byPost: Record<string, Summary> }>(() => ({ model: 'missing', progress: 0, byPost: {} }))
 export const checkModel = async (): Promise<void> => undefined
@@ -18,3 +19,5 @@ export const deleteModel = async (): Promise<void> => undefined
 export const commentsForSummary = (_nodes: Array<Comment | More>): string => ''
 export const commentCount = (nodes: Array<Comment | More>) => nodes.length
 export const summarize = async (_post: Post, _nodes: Array<Comment | More>): Promise<void> => undefined
+export const stopSummary = (): void => undefined
+export const toggleFolded = (_postName: string): void => undefined

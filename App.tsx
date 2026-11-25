@@ -38,6 +38,7 @@ import { WebSignInHost } from './src/ui/WebSignIn'
 import { PaneActive, useViewer } from './src/ui/media'
 import { Dock, Rail, TABS } from './src/ui/TabBar'
 import { applyTheme, colors, setTextScale, themeKey } from './src/ui/theme'
+import { ErrorBoundary } from './src/ui/ErrorBoundary'
 import { ToastHost } from './src/ui/toast'
 import { UpdatePrompt, useUpdatePrompt } from './src/ui/UpdatePrompt'
 
@@ -263,6 +264,7 @@ export default function App() {
         </View>
       ) : (
         <Shell key={`${key}-${wide}-${textSize}`}>
+          <ErrorBoundary>
           <NavigationContainer ref={nav} theme={theme} initialState={navState.current} onStateChange={(st) => (navState.current = st)}>
             <Root.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true, contentStyle: { backgroundColor: colors.bg }, animation: wide ? 'fade' : undefined }}>
               <Root.Screen name="Tabs" component={Tabs} />
@@ -282,13 +284,16 @@ export default function App() {
               <Root.Screen name="WhatsNew" component={WhatsNew} />
             </Root.Navigator>
           </NavigationContainer>
+          </ErrorBoundary>
         </Shell>
       )}
       {ready && <UpdatePrompt />}
       {ready && <InboxWatcher />}
       {ready && <IncomingLinks />}
       <Shortcuts />
-      <MediaViewerHost />
+      <ErrorBoundary>
+        <MediaViewerHost />
+      </ErrorBoundary>
       <BrowserSignInHost />
       <WebSignInHost />
       <ToastHost />

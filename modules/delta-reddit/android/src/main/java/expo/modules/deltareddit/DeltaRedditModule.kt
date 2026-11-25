@@ -1,6 +1,10 @@
 package expo.modules.deltareddit
 
 import android.content.Intent
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -13,6 +17,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 // Reddit without an API key, on Android (src/lib/reddit/mobile.ts): you sign in on reddit.com in
@@ -74,6 +79,40 @@ class DeltaRedditModule : Module() {
         manager.flush()
         promise.resolve(true)
       }
+    }
+
+    // Save Video (issue #8): Reddit keeps a video's picture and sound in separate MP4 files. This puts
+    // the first video track of one and the first audio track of the other into one MP4, without
+    // re-encoding (MediaMuxer copies the samples as they are). Paths are plain file paths.
+    AsyncFunction("muxVideo") { videoPath: String, audioPath: String, outPath: String ->
+      val muxer = MediaMuxer(outPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+      val sources = listOf(videoPath to "video/", audioPath to "audio/").map { (path, kind) ->
+        val ex = MediaExtractor()
+        ex.setDataSource(path)
+        val track = (0 until ex.trackCount).firstOrNull { ex.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith(kind) == true }
+          ?: run { ex.release(); muxer.release(); throw IOException("no ${kind.trimEnd('/')} track in $path") }
+        ex.selectTrack(track)
+        Triple(ex, muxer.addTrack(ex.getTrackFormat(track)), ex.getTrackFormat(track))
+      }
+      try {
+        muxer.start()
+        val buffer = ByteBuffer.allocate(4 * 1024 * 1024)
+        val info = MediaCodec.BufferInfo()
+        for ((ex, out, _) in sources) {
+          while (true) {
+            val size = ex.readSampleData(buffer, 0)
+            if (size < 0) break
+            info.set(0, size, ex.sampleTime, if (ex.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0) MediaCodec.BUFFER_FLAG_KEY_FRAME else 0)
+            muxer.writeSampleData(out, buffer, info)
+            ex.advance()
+          }
+        }
+        muxer.stop()
+      } finally {
+        sources.forEach { it.first.release() }
+        muxer.release()
+      }
+      outPath
     }
 
     // One HTTP request. Resolves with status, final URL, content type, body and rate-limit headers.

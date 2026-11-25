@@ -13,6 +13,8 @@ import { scheduleOnRN } from 'react-native-worklets'
 const MAX = 6
 const SPRING = { damping: 22, stiffness: 240, mass: 0.7 }
 /** How far (or how fast) a sideways swipe must go to move on. */
+/** How far a finger may move and still count as a tap. */
+export const TAP_SLOP = 12
 const SWIPE_DISTANCE = 70
 const SWIPE_VELOCITY = 650
 
@@ -108,6 +110,8 @@ export function ZoomImage({ uri, width, height, stageW, stageH, onClose, onLoad,
   })
 
   const tap = useTapGesture({
+    // Only a real tap closes: a quick swipe over the dark bands used to count as one (issue #11).
+    maxDistance: TAP_SLOP,
     onActivate: (e) => {
       'worklet'
       // Outside the picture (as it's zoomed and moved now): close.
@@ -120,6 +124,7 @@ export function ZoomImage({ uri, width, height, stageW, stageH, onClose, onLoad,
 
   const doubleTap = useTapGesture({
     numberOfTaps: 2,
+    maxDistance: TAP_SLOP,
     onActivate: (e) => {
       'worklet'
       if (scale.value > 1.05) {

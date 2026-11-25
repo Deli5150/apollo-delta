@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useEffect } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
-import { cancelDownload, checkModel, commentCount, downloadModel, MODEL, summarize, useSummaries } from '../lib/summarizer'
+import { cancelDownload, checkModel, commentCount, downloadModel, MODEL, stopSummary, summarize, toggleFolded, useSummaries } from '../lib/summarizer'
 import type { Comment, More, Post } from '../lib/reddit/types'
 import { colors, fs } from './theme'
 
@@ -32,16 +32,32 @@ export function SummaryCard({ post, comments }: { post: Post; comments: Array<Co
 
   if (summary && summary.state !== 'error') {
     const busy = summary.state !== 'done'
+    // Done: the title folds the summary away and back (issue #7).
+    if (!busy) {
+      return (
+        <View style={box}>
+          <Pressable onPress={() => toggleFolded(post.name)} accessibilityRole="button" accessibilityLabel={summary.folded ? 'Show Comment Summary' : 'Hide Comment Summary'} accessibilityState={{ expanded: !summary.folded }} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="sparkles" size={16} color={colors.accentHi} />
+            <Text style={{ color: colors.accentHi, fontWeight: '700', fontSize: fs(14), flex: 1 }}>Comment Summary</Text>
+            <Ionicons name={summary.folded ? 'chevron-down' : 'chevron-up'} size={18} color={colors.accentHi} />
+          </Pressable>
+          {!summary.folded && (
+            <>
+              <Text style={{ color: colors.text, fontSize: fs(14.5), lineHeight: fs(21) }}>{summary.text}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ color: colors.faint, fontSize: fs(11.5), flex: 1 }}>Written on your phone by {MODEL.name}, from the top comments. It can get things wrong.</Text>
+                {action('Again', () => void summarize(post, comments), true)}
+              </View>
+            </>
+          )}
+        </View>
+      )
+    }
     return (
       <View style={box}>
-        {title(summary.state === 'reading' ? `Reading ${commentCount(comments)} comments…` : busy ? 'Summarizing…' : 'Comment Summary', busy)}
+        {title(summary.state === 'reading' ? `Reading ${commentCount(comments)} comments…` : 'Summarizing…', true)}
         {summary.text ? <Text style={{ color: colors.text, fontSize: fs(14.5), lineHeight: fs(21) }}>{summary.text}</Text> : null}
-        {!busy && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ color: colors.faint, fontSize: fs(11.5), flex: 1 }}>Written on your phone by {MODEL.name}, from the top comments. It can get things wrong.</Text>
-            {action('Again', () => void summarize(post, comments), true)}
-          </View>
-        )}
+        {action('Stop', stopSummary, true)}
       </View>
     )
   }
