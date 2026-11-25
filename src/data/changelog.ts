@@ -2,6 +2,16 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; notes: string[] }> = [
   {
+    version: '1.0.4',
+    date: 'November 2026',
+    notes: [
+      'Summarize Comments on Mac and Windows: summaries written on your computer by the same free open-source model as on Android. The first time, it’s a one-time 1.1 GB download.',
+      'Save Video on Mac and Windows keeps the sound of videos hosted on Reddit.',
+      'Messages like “Image copied” show over the full-screen viewer.',
+      'Summaries no longer quote upvote counts.'
+    ]
+  },
+  {
     version: '1.0.3',
     date: 'November 2026',
     notes: [

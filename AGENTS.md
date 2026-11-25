@@ -61,6 +61,16 @@ stack, updater and release tooling.
   memory). Release key credentials/delta-release.keystore alias delta, DELTA_RELEASE_* in
   ~/.gradle/gradle.properties, SHA-1 DE:DE:C0:99:B8:DA:4E:92:06:3B:D1:64:39:08:66:85:46:65:CC:49.
 
+- Summarize Comments (2026-11-24, user's request: phone and desktop): shared prompt/sampling in
+  `src/lib/summaryPrompt.ts`, state/Stop/fold/loop guard in `summaryStore.ts` (an `Engine` per
+  platform). Phones: llama.rn (`summarizer.ts`). Desktop: `desktop/ai.cjs` keeps the GGUF in
+  userData/models and runs @wllama/wllama (WASM llama.cpp, WebGPU when available) in a hidden window
+  at app://delta/__ai/ served with COOP/COEP so it gets threads; the main window can't be isolated
+  (YouTube embeds). Same model, Qwen2.5 1.5B Q4_K_M.
+- Save Video with sound: v.redd.it keeps audio separately. Android muxes with MediaMuxer
+  (`DeltaReddit.muxVideo`, `src/lib/mediaFiles.ts`); desktop with mp4box.js (`desktop/media.cjs`).
+- Every mobile fix or feature also goes to the desktop app (user's rule, 2026-11-24).
+
 ## Before finishing a change
 
 `npm run typecheck`, `npm test`, and for UI changes rebuild (`node scripts/desktop.mjs`) and take

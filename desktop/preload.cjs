@@ -33,6 +33,24 @@ contextBridge.exposeInMainWorld('apollodelta', {
     request: (id, req) => ipcRenderer.invoke('reddit:request', id, req),
     upload: (id, file) => ipcRenderer.invoke('reddit:upload', id, file)
   },
+  ai: {
+    model: (file, bytes) => ipcRenderer.invoke('ai:model', file, bytes),
+    download: (opts) => ipcRenderer.invoke('ai:download', opts),
+    cancelDownload: () => ipcRenderer.invoke('ai:cancel'),
+    deleteModel: (file) => ipcRenderer.invoke('ai:delete', file),
+    summarize: (id, file, messages, sampling) => ipcRenderer.invoke('ai:summarize', id, file, messages, sampling),
+    stop: (id) => ipcRenderer.send('ai:stop', id),
+    onProgress: (cb) => {
+      const listener = (_e, p) => cb(p)
+      ipcRenderer.on('ai:progress', listener)
+      return () => ipcRenderer.off('ai:progress', listener)
+    },
+    onToken: (cb) => {
+      const listener = (_e, id, piece) => cb(id, piece)
+      ipcRenderer.on('ai:token', listener)
+      return () => ipcRenderer.off('ai:token', listener)
+    }
+  },
   web: {
     preview: (url) => ipcRenderer.invoke('web:preview', url),
     translate: (text, target) => ipcRenderer.invoke('web:translate', text, target)

@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useEffect } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
-import { cancelDownload, checkModel, commentCount, downloadModel, MODEL, stopSummary, summarize, toggleFolded, useSummaries } from '../lib/summarizer'
+import { cancelDownload, checkModel, commentCount, downloadModel, MODEL, stopSummary, summarize, toggleFolded, useSummaries, WRITTEN_ON_DEVICE } from '../lib/summarizer'
+import { WRITTEN_ON } from '../lib/summaryPrompt'
 import type { Comment, More, Post } from '../lib/reddit/types'
 import { colors, fs } from './theme'
 
-// Summarize Comments under a post's comment bar (phones): the summary is written on the phone by an
+// Summarize Comments under a post's comment bar (phones and the desktop app): the summary is written on the device by an
 // open-source model (src/lib/summarizer.ts), downloaded once the first time.
 
 const gb = (bytes: number) => `${(bytes / 1e9).toFixed(1)} GB`
@@ -45,7 +46,7 @@ export function SummaryCard({ post, comments }: { post: Post; comments: Array<Co
             <>
               <Text style={{ color: colors.text, fontSize: fs(14.5), lineHeight: fs(21) }}>{summary.text}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ color: colors.faint, fontSize: fs(11.5), flex: 1 }}>Written on your phone by {MODEL.name}, from the top comments. It can get things wrong.</Text>
+                <Text style={{ color: colors.faint, fontSize: fs(11.5), flex: 1 }}>{WRITTEN_ON(WRITTEN_ON_DEVICE)}</Text>
                 {action('Again', () => void summarize(post, comments), true)}
               </View>
             </>
@@ -79,7 +80,7 @@ export function SummaryCard({ post, comments }: { post: Post; comments: Array<Co
     return (
       <View style={box}>
         {title('Summarize Comments')}
-        {note(`Summaries are written on your phone by ${MODEL.name}, a free open-source AI model, so nothing leaves your phone. It's a one-time ${gb(MODEL.bytes)} download (Wi-Fi recommended).`)}
+        {note(`Summaries are written on your ${WRITTEN_ON_DEVICE} by ${MODEL.name}, a free open-source AI model, so nothing leaves your ${WRITTEN_ON_DEVICE}. It's a one-time ${gb(MODEL.bytes)} download${WRITTEN_ON_DEVICE === 'phone' ? ' (Wi-Fi recommended)' : ''}.`)}
         {error ? <Text style={{ color: colors.danger, fontSize: fs(12.5) }}>{error}</Text> : null}
         {action(`Download (${gb(MODEL.bytes)})`, () => void downloadModel())}
       </View>

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4] - 2026-11-24
+
+- Summarize Comments on Mac and Windows: the same summaries as on Android, written on your computer by the same free open-source model (Qwen2.5 1.5B), so nothing is sent anywhere. It's a one-time 1.1 GB download the first time; Settings can delete it. Stop, folding and the guard against repeating work the same way.
+- Save Video on Mac and Windows keeps the sound of videos hosted on Reddit, as on Android.
+- Messages like "Image copied" now show over the full-screen viewer on Mac and Windows too.
+- Summaries no longer quote upvote counts like "[412]".
+
 ## [1.0.3] - 2026-11-24
 
 - Replying no longer closes the app on Android. Reddit sometimes answers a new reply without its author or text, and showing that reply crashed the app; it now fills them in from what you wrote. If a page ever hits a problem, you get a "Something went wrong" screen with Try Again and Report It, instead of the app closing (#10).

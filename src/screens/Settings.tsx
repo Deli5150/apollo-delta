@@ -3,7 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import DeltaReddit from '../../modules/delta-reddit/src/DeltaRedditModule'
-import { checkModel, deleteModel, MODEL, summariesAvailable, useSummaries } from '../lib/summarizer'
+import { checkModel, deleteModel, MODEL, summariesAvailable, useSummaries, WRITTEN_ON_DEVICE } from '../lib/summarizer'
 import { useShallow } from 'zustand/react/shallow'
 import { CHANGELOG } from '../data/changelog'
 import { useSubs } from '../lib/feeds'
@@ -218,7 +218,7 @@ function General() {
         </Group>
       ) : null}
       {summariesAvailable && model === 'ready' ? (
-        <Group title="Comment Summaries" footer={`Summaries are written on this phone by ${MODEL.name}, an open-source AI model. Deleting it frees ${(MODEL.bytes / 1e9).toFixed(1)} GB; Summarize Comments offers to download it again.`}>
+        <Group title="Comment Summaries" footer={`Summaries are written on this ${WRITTEN_ON_DEVICE} by ${MODEL.name}, an open-source AI model. Deleting it frees ${(MODEL.bytes / 1e9).toFixed(1)} GB; Summarize Comments offers to download it again.`}>
           <Row icon="trash" iconColor={colors.danger} title="Delete the AI Model" onPress={() => confirm('Delete the AI model?', `Frees ${(MODEL.bytes / 1e9).toFixed(1)} GB. You can download it again from any thread.`, 'Delete', () => void deleteModel().then(() => toast('Model deleted')))} />
         </Group>
       ) : null}

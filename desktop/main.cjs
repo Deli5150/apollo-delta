@@ -4,6 +4,8 @@ const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const updater = require('./updater.cjs')
 const reddit = require('./reddit.cjs')
+const ai = require('./ai.cjs')
+const media = require('./media.cjs')
 const { version } = require('./package.json')
 
 // Apollo Delta's desktop shell: the app's web build (web/, from `expo export`) served over app://,
@@ -38,8 +40,11 @@ function fixReferers() {
 }
 
 function serveWeb() {
-  protocol.handle('app', (req) => {
+  protocol.handle('app', async (req) => {
     const { pathname } = new URL(req.url)
+    // The hidden summarizer window's files and the model (ai.cjs).
+    const fromAi = await ai.serve(decodeURIComponent(pathname)).catch(() => new Response('Not found', { status: 404 }))
+    if (fromAi) return fromAi
     let file = path.normalize(path.join(WEB, decodeURIComponent(pathname)))
     if (!file.startsWith(WEB) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(WEB, 'index.html')
     return net.fetch(pathToFileURL(file).toString())
@@ -210,16 +215,33 @@ ipcMain.handle('file:open', async (_e, extensions) => {
 
 /** Saves a picture or video from Reddit into Downloads (or where you choose). */
 ipcMain.handle('media:save', async (_e, url, ask) => {
-  const name = decodeURIComponent(new URL(url).pathname.split('/').pop() || 'media').replace(/[^\w.-]/g, '_')
+  const reddit_video = /^https:\/\/v\.redd\.it\/(\w+)\//.exec(url)
+  // Reddit's own videos are named like CMAF_720.mp4: name them after the video instead.
+  const name = reddit_video ? `${reddit_video[1]}.mp4` : decodeURIComponent(new URL(url).pathname.split('/').pop() || 'media').replace(/[^\w.-]/g, '_')
   let target = path.join(app.getPath('downloads'), name)
   if (ask) {
     const r = await dialog.showSaveDialog(win, { defaultPath: target })
     if (r.canceled || !r.filePath) return false
     target = r.filePath
   }
-  const res = await fetch(url, { headers: { 'User-Agent': reddit.userAgent() } })
-  if (!res.ok) throw new Error(`download failed (${res.status})`)
-  fs.writeFileSync(target, Buffer.from(await res.arrayBuffer()))
+  const get = async (u) => {
+    const res = await fetch(u, { headers: { 'User-Agent': reddit.userAgent() } })
+    return res.ok ? Buffer.from(await res.arrayBuffer()) : null
+  }
+  let data = await get(url)
+  if (!data) throw new Error('download failed')
+  // Its sound is a separate file: put the two together, as the Android app does (issue #8).
+  for (const audioUrl of media.redditAudioUrls(url)) {
+    const audio = await get(audioUrl).catch(() => null)
+    if (!audio) continue
+    try {
+      data = media.muxAudioVideo(data, audio)
+    } catch (e) {
+      console.warn('Keeping the video without its sound:', e.message)
+    }
+    break
+  }
+  fs.writeFileSync(target, data)
   shell.showItemInFolder(target)
   return true
 })
@@ -263,12 +285,16 @@ ipcMain.on('update:auto', (_e, enabled) => updater.setAuto(enabled))
 
 app.on('second-instance', showWindow)
 app.on('activate', showWindow)
-app.on('before-quit', () => (app.isQuitting = true))
+app.on('before-quit', () => {
+  app.isQuitting = true
+  ai.stopWorker()
+})
 app.on('window-all-closed', () => {})
 
 app.whenReady().then(() => {
   app.setAppUserModelId('app.apollodelta.reddit')
   serveWeb()
+  ai.register()
   fixReferers()
   createWindow()
   createTray()

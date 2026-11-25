@@ -275,8 +275,8 @@ export function MediaViewerHost() {
         </>
       )}
       </View>
-      {/* On Android this Modal covers the app's own toasts ("Picture saved"): show them here too. */}
-      {phone && <ToastHost bottom={bottom + (post ? 76 : 0) + 10} />}
+      {/* This Modal covers the app's own toasts ("Picture saved", "Link copied"): show them here too. */}
+      <ToastHost bottom={bottom + (post ? 76 : 0) + 10} />
       </GestureHandlerRootView>
     </Modal>
   )

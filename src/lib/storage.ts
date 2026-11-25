@@ -75,6 +75,18 @@ export interface DesktopBridge {
     request(id: string | null, req: RedditRequest): Promise<RedditResponse>
     upload(id: string, file: { name: string; mimetype: string; base64: string }): Promise<{ url?: string; assetId?: string; error?: string }>
   }
+  /** Summarize Comments (desktop/ai.cjs): the model file, and a hidden window that runs it. */
+  ai?: {
+    model(file: string, bytes: number): Promise<'ready' | 'missing'>
+    /** Resolves true once downloaded, false if cancelled. */
+    download(opts: { url: string; file: string; bytes: number }): Promise<boolean>
+    cancelDownload(): Promise<void>
+    deleteModel(file: string): Promise<void>
+    summarize(id: string, file: string, messages: Array<{ role: string; content: string }>, sampling: Record<string, number>): Promise<void>
+    stop(id: string): void
+    onProgress(cb: (fraction: number) => void): () => void
+    onToken(cb: (id: string, piece: string) => void): () => void
+  }
   web: {
     preview(url: string): Promise<LinkPreview | null>
     translate(text: string, target: string): Promise<{ text: string; from?: string }>
