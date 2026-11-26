@@ -118,11 +118,23 @@ export function InlineImage({ url, image, onPress }: { url: string; image?: Medi
   const [size, setSize] = useState<{ w: number; h: number } | null>(image?.width ? { w: image.width, h: image.height } : null)
   const src = image ? pick(image, 640) : url
   const animated = image?.mp4
+  // A GIF whose size isn't known (Giphy's): the still frame is small, so read the size from it.
+  const still = animated && !image?.width ? (image?.previews?.[0]?.url ?? src) : undefined
+  useEffect(() => {
+    if (!still) return
+    let live = true
+    Image.loadAsync(still)
+      .then((ref) => live && ref.width && setSize({ w: ref.width, h: ref.height }))
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [still])
   return (
     <Pressable onPress={() => openViewer([animated ? { kind: 'video', mp4: image!.mp4 } : { kind: 'image', url: image?.url ?? url }])} style={{ alignSelf: 'flex-start', maxWidth: '100%' }}>
       {animated ? (
         <View style={{ width: 320, maxWidth: '100%', aspectRatio: ratio(size?.w, size?.h), borderRadius: 10, overflow: 'hidden' }}>
-          <Video mp4={image!.mp4} poster={src} />
+          <Video mp4={image!.mp4} poster={still ?? src} />
         </View>
       ) : (
         <Image

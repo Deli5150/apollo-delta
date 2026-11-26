@@ -17,7 +17,12 @@ const DATA = () => path.join(app.getPath('userData'), 'apollodelta.json')
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }])
 
-if (!app.requestSingleInstanceLock()) app.exit(0)
+// Test hook (with DELTA_SHOTS): run on a copy of the data beside an installed Apollo Delta. Its own
+// data folder keeps the two apart, so it skips the single-instance lock (on macOS that lock is
+// app-wide, whatever the folder).
+const testCopy = Boolean(process.env.DELTA_SHOTS && process.env.DELTA_USER_DATA)
+if (testCopy) app.setPath('userData', process.env.DELTA_USER_DATA)
+if (!testCopy && !app.requestSingleInstanceLock()) app.exit(0)
 
 let win = null
 let tray = null

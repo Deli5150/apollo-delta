@@ -1,6 +1,6 @@
 import { memo, useMemo, useState, type ReactNode } from 'react'
 import { Platform, Pressable, ScrollView, Text, View, type TextStyle } from 'react-native'
-import { metaForHref } from '../lib/reddit/parse'
+import { giphyId, metaForHref } from '../lib/reddit/parse'
 import type { MediaImage } from '../lib/reddit/types'
 import { colors, font, fs } from './theme'
 import { InlineImage } from './media'
@@ -107,7 +107,7 @@ function inline(nodes: Array<Node | string>, ctx: Ctx, style: TextStyle, key = '
 }
 
 /** Images linked on their own in a paragraph (how Reddit renders pictures posted in comments). */
-function imageLinks(n: Node, ctx: Ctx): Array<{ url: string; image?: MediaImage }> {
+function imageLinks(n: Node, ctx: Ctx, used = new Set<Node>()): Array<{ url: string; image?: MediaImage }> {
   if (!ctx.inlineMedia) return []
   const out: Array<{ url: string; image?: MediaImage }> = []
   for (const c of n.children) {
@@ -121,10 +121,28 @@ function imageLinks(n: Node, ctx: Ctx): Array<{ url: string; image?: MediaImage 
     }
     if (c.tag !== 'a') continue
     const href = c.attrs.href ?? ''
-    const meta = metaForHref(href, ctx.mediaMetadata)
-    if (meta || (isImageUrl(href) && textOf(c).trim().startsWith('http'))) out.push({ url: meta?.url ?? href, image: meta })
+    // A Giphy link shows as the GIF only when it's the bare link Reddit writes for a GIF reply,
+    // not when someone links giphy.com in words.
+    const bare = textOf(c).trim().startsWith('http')
+    const meta = giphyId(href) && !href.startsWith('giphy|') && !bare ? undefined : metaForHref(href, ctx.mediaMetadata)
+    if (meta || (isImageUrl(href) && bare)) {
+      out.push({ url: meta?.url ?? href, image: meta })
+      // The bare link is replaced by the picture or GIF, as on Reddit.
+      if (bare || href.startsWith('giphy|')) used.add(c)
+    }
   }
   return out
+}
+
+/** A paragraph's text without the links that became pictures (and the line breaks around them). */
+function withoutMedia(children: Array<Node | string>, used: Set<Node>): Array<Node | string> {
+  const kept = children
+    .filter((c) => typeof c === 'string' || !used.has(c))
+    .map((c) => (typeof c === 'string' ? c.replace(/!\[(?:gif|img)\]\([^)\s]+\)/g, '') : c))
+  const blank = (c: Node | string) => (typeof c === 'string' ? !c.trim() : c.tag === 'br')
+  while (kept.length && blank(kept[kept.length - 1])) kept.pop()
+  while (kept.length && blank(kept[0])) kept.shift()
+  return kept
 }
 
 function block(n: Node, ctx: Ctx, key: string, depth = 0): ReactNode {
@@ -136,13 +154,14 @@ function block(n: Node, ctx: Ctx, key: string, depth = 0): ReactNode {
   )
   switch (n.tag) {
     case 'p': {
-      const images = imageLinks(n, ctx)
+      const used = new Set<Node>()
+      const images = imageLinks(n, ctx, used)
       if (images.length) {
-        // A paragraph that's only the image link becomes the image.
-        const onlyLinks = n.children.every((c) => (typeof c === 'string' ? !c.replace(/!\[(?:gif|img)\]\([^)\s]+\)/g, '').trim() : c.tag === 'a' || c.tag === 'br'))
+        // The paragraph's words (if any) above, then the pictures and GIFs it linked.
+        const text = withoutMedia(n.children, used)
         return (
           <View key={key} style={{ gap: 6 }}>
-            {!onlyLinks && para(n.children, {}, `${key}t`)}
+            {text.length > 0 && para(text, {}, `${key}t`)}
             {images.map((img, i) => (
               <InlineImage key={i} url={img.url} image={img.image} onPress={() => ctx.onLink?.(img.url)} />
             ))}

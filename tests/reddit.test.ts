@@ -132,3 +132,12 @@ test('GIFs in comments: Giphy and uploaded GIFs find their media', async () => {
   assert.equal(metaForHref('https://preview.redd.it/abc123.gif?width=300&format=mp4', meta)?.width, 300)
   assert.equal(metaForHref('https://example.com/x.gif', meta), undefined)
 })
+
+test('Giphy replies as Reddit really sends them: an "invalid" entry and a bare link (issue #13)', async () => {
+  const { mediaMetadata, metaForHref } = await import('../src/lib/reddit/parse')
+  const meta = mediaMetadata({ 'giphy|ntRQjO4ngRERi': { status: 'invalid' } })
+  const gif = metaForHref('https://giphy.com/gifs/ntRQjO4ngRERi', meta)
+  assert.equal(gif?.mp4, 'https://i.giphy.com/media/ntRQjO4ngRERi/giphy.mp4')
+  assert.equal(gif?.previews?.[0]?.url, 'https://i.giphy.com/media/ntRQjO4ngRERi/giphy_s.gif')
+  assert.equal(metaForHref('giphy|ntRQjO4ngRERi|downsized', undefined)?.url, 'https://i.giphy.com/media/ntRQjO4ngRERi/giphy.gif')
+})

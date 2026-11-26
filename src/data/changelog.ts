@@ -2,6 +2,11 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; notes: string[] }> = [
   {
+    version: '1.0.6',
+    date: 'November 2026',
+    notes: ['Giphy GIFs play in comments instead of showing as a giphy.com link.']
+  },
+  {
     version: '1.0.5',
     date: 'November 2026',
     notes: [

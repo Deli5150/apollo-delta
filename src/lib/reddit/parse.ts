@@ -71,14 +71,32 @@ export function mediaMetadata(raw?: Raw | null): Record<string, MediaImage> | un
 
 const YT = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/
 
-/** The media_metadata entry a link in a comment points at (an uploaded picture or GIF, or a Giphy GIF). */
+/** The Giphy GIF id a link or a comment's ![gif](giphy|<id>) points at. */
+export const giphyId = (href: string): string | undefined =>
+  href.match(/^giphy\|([^|]+)/)?.[1] ?? href.match(/giphy\.com\/(?:gifs|media|embed)\/(?:[^/?#]*-)?([A-Za-z0-9]+)(?:[/?#]|$)/)?.[1]
+
+/**
+ * A Giphy GIF from its id, on Giphy's public media server. Reddit usually marks Giphy entries in a
+ * comment's media_metadata "invalid", with no files in them (seen on real comments, 2026-11-26), so
+ * the GIF is built from the id like Reddit's own app does. Size unknown: InlineImage reads it from
+ * the still frame.
+ */
+export const giphyMedia = (id: string): MediaImage => ({
+  url: `https://i.giphy.com/media/${id}/giphy.gif`,
+  width: 0,
+  height: 0,
+  previews: [{ url: `https://i.giphy.com/media/${id}/giphy_s.gif`, width: 0, height: 0 }],
+  mp4: `https://i.giphy.com/media/${id}/giphy.mp4`
+})
+
+/** The media a link in a comment points at: an uploaded picture or GIF, or a Giphy GIF. */
 export function metaForHref(href: string, meta?: Record<string, MediaImage>): MediaImage | undefined {
-  if (!meta || !href) return undefined
-  if (meta[href]) return meta[href]
-  const giphy = href.match(/^giphy\|([^|]+)/)?.[1] ?? href.match(/giphy\.com\/(?:gifs|media|embed)\/(?:[^/?#]*-)?([A-Za-z0-9]+)(?:[/?#]|$)/)?.[1]
-  if (giphy) return meta[`giphy|${giphy}`]
+  if (!href) return undefined
+  if (meta?.[href]) return meta[href]
+  const giphy = giphyId(href)
+  if (giphy) return meta?.[`giphy|${giphy}`] ?? giphyMedia(giphy)
   const id = href.match(/(?:preview|i)\.redd\.it\/(?:[^/?#]*-)?(\w+)\.\w+/)?.[1]
-  return id ? meta[id] : undefined
+  return id ? meta?.[id] : undefined
 }
 
 export function youTubeId(url: string): { id: string; start?: number } | null {

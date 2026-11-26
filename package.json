@@ -1,6 +1,6 @@
 {
   "name": "apollo-delta",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Apollo Delta — a Reddit client inspired by Apollo, for macOS, Windows and Android. No API key needed.",
   "main": "index.ts",
   "dependencies": {

@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.6] - 2026-11-26
+
+- Giphy GIFs now play in comments, as on Reddit's own app: a GIF reply shows the GIF instead of a giphy.com link, on Android, Mac and Windows (#13).
+
 ## [1.0.5] - 2026-11-26
 
 - GIFs in comments: Giphy GIFs and GIFs people upload now play right in the thread, on Android, Mac and Windows (#12).
