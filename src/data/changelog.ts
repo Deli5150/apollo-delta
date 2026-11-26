@@ -2,6 +2,15 @@
 
 export const CHANGELOG: Array<{ version: string; date: string; notes: string[] }> = [
   {
+    version: '1.0.5',
+    date: 'November 2026',
+    notes: [
+      'GIFs in comments: Giphy GIFs and uploaded GIFs play right in the thread.',
+      'A new App Icon picker, with icons grouped into packs.',
+      '56 new app icons in nine packs: Frosted, Crystal, Moods, Remix, Dress-Up, Holidays, Two-Tone, Minimal and Pride.'
+    ]
+  },
+  {
     version: '1.0.4',
     date: 'November 2026',
     notes: [

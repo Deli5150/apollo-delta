@@ -1,5 +1,6 @@
 import { memo, useMemo, useState, type ReactNode } from 'react'
 import { Platform, Pressable, ScrollView, Text, View, type TextStyle } from 'react-native'
+import { metaForHref } from '../lib/reddit/parse'
 import type { MediaImage } from '../lib/reddit/types'
 import { colors, font, fs } from './theme'
 import { InlineImage } from './media'
@@ -110,11 +111,18 @@ function imageLinks(n: Node, ctx: Ctx): Array<{ url: string; image?: MediaImage 
   if (!ctx.inlineMedia) return []
   const out: Array<{ url: string; image?: MediaImage }> = []
   for (const c of n.children) {
-    if (typeof c === 'string' || c.tag !== 'a') continue
+    // Some clients leave the markdown in the text: ![gif](giphy|id) or ![img](id).
+    if (typeof c === 'string') {
+      for (const m of c.matchAll(/!\[(?:gif|img)\]\(([^)\s]+)\)/g)) {
+        const meta = metaForHref(m[1], ctx.mediaMetadata)
+        if (meta) out.push({ url: meta.url, image: meta })
+      }
+      continue
+    }
+    if (c.tag !== 'a') continue
     const href = c.attrs.href ?? ''
-    const id = href.match(/preview\.redd\.it\/(?:[^/]*-)?(\w+)\.\w+/)?.[1]
-    const meta = id ? ctx.mediaMetadata?.[id] : undefined
-    if (meta || (isImageUrl(href) && textOf(c).trim().startsWith('http'))) out.push({ url: href, image: meta })
+    const meta = metaForHref(href, ctx.mediaMetadata)
+    if (meta || (isImageUrl(href) && textOf(c).trim().startsWith('http'))) out.push({ url: meta?.url ?? href, image: meta })
   }
   return out
 }
@@ -131,7 +139,7 @@ function block(n: Node, ctx: Ctx, key: string, depth = 0): ReactNode {
       const images = imageLinks(n, ctx)
       if (images.length) {
         // A paragraph that's only the image link becomes the image.
-        const onlyLinks = n.children.every((c) => (typeof c === 'string' ? !c.trim() : c.tag === 'a' || c.tag === 'br'))
+        const onlyLinks = n.children.every((c) => (typeof c === 'string' ? !c.replace(/!\[(?:gif|img)\]\([^)\s]+\)/g, '').trim() : c.tag === 'a' || c.tag === 'br'))
         return (
           <View key={key} style={{ gap: 6 }}>
             {!onlyLinks && para(n.children, {}, `${key}t`)}

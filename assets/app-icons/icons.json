@@ -103,5 +103,285 @@
     "id": "art-synth",
     "name": "Synthwave",
     "group": "Art Styles"
+  },
+  {
+    "id": "frost-frost",
+    "name": "Frost",
+    "group": "Frosted"
+  },
+  {
+    "id": "frost-peach",
+    "name": "Peach",
+    "group": "Frosted"
+  },
+  {
+    "id": "frost-lagoon",
+    "name": "Lagoon",
+    "group": "Frosted"
+  },
+  {
+    "id": "frost-orchid",
+    "name": "Orchid",
+    "group": "Frosted"
+  },
+  {
+    "id": "frost-cinder",
+    "name": "Cinder",
+    "group": "Frosted"
+  },
+  {
+    "id": "frost-glacier",
+    "name": "Glacier",
+    "group": "Frosted"
+  },
+  {
+    "id": "frost-meadow",
+    "name": "Meadow",
+    "group": "Frosted"
+  },
+  {
+    "id": "frost-smoke",
+    "name": "Smoke",
+    "group": "Frosted"
+  },
+  {
+    "id": "crystal-prism",
+    "name": "Prism",
+    "group": "Crystal"
+  },
+  {
+    "id": "crystal-aurora",
+    "name": "Aurora",
+    "group": "Crystal"
+  },
+  {
+    "id": "crystal-ruby",
+    "name": "Ruby",
+    "group": "Crystal"
+  },
+  {
+    "id": "crystal-sapphire",
+    "name": "Sapphire",
+    "group": "Crystal"
+  },
+  {
+    "id": "crystal-topaz",
+    "name": "Topaz",
+    "group": "Crystal"
+  },
+  {
+    "id": "crystal-amethyst",
+    "name": "Amethyst",
+    "group": "Crystal"
+  },
+  {
+    "id": "frost-halo",
+    "name": "Angel Frost",
+    "group": "Frosted"
+  },
+  {
+    "id": "crystal-kitty",
+    "name": "Crystal Kitty",
+    "group": "Crystal"
+  },
+  {
+    "id": "mood-sleepy",
+    "name": "Sleepy",
+    "group": "Moods"
+  },
+  {
+    "id": "mood-wink",
+    "name": "Wink",
+    "group": "Moods"
+  },
+  {
+    "id": "mood-starstruck",
+    "name": "Starstruck",
+    "group": "Moods"
+  },
+  {
+    "id": "mood-grumpy",
+    "name": "Grumpy",
+    "group": "Moods"
+  },
+  {
+    "id": "mood-dizzy",
+    "name": "Dizzy",
+    "group": "Moods"
+  },
+  {
+    "id": "mood-cyclops",
+    "name": "Cyclops",
+    "group": "Moods"
+  },
+  {
+    "id": "remix-halo",
+    "name": "Angel",
+    "group": "Remix"
+  },
+  {
+    "id": "remix-horns",
+    "name": "Mischief",
+    "group": "Remix"
+  },
+  {
+    "id": "remix-kitty",
+    "name": "Kitty",
+    "group": "Remix"
+  },
+  {
+    "id": "remix-ghost",
+    "name": "Boo",
+    "group": "Remix"
+  },
+  {
+    "id": "remix-wrapped",
+    "name": "Gift Wrap",
+    "group": "Remix"
+  },
+  {
+    "id": "remix-glossy",
+    "name": "Gloss",
+    "group": "Remix"
+  },
+  {
+    "id": "two-teal",
+    "name": "Teal",
+    "group": "Two-Tone"
+  },
+  {
+    "id": "two-peach",
+    "name": "Peach",
+    "group": "Two-Tone"
+  },
+  {
+    "id": "two-lime",
+    "name": "Lime",
+    "group": "Two-Tone"
+  },
+  {
+    "id": "two-berry",
+    "name": "Berry",
+    "group": "Two-Tone"
+  },
+  {
+    "id": "two-cobalt",
+    "name": "Cobalt",
+    "group": "Two-Tone"
+  },
+  {
+    "id": "two-tangerine",
+    "name": "Tangerine",
+    "group": "Two-Tone"
+  },
+  {
+    "id": "acc-shades",
+    "name": "Shades",
+    "group": "Accessories"
+  },
+  {
+    "id": "acc-headphones",
+    "name": "Headphones",
+    "group": "Accessories"
+  },
+  {
+    "id": "acc-crown",
+    "name": "Royal",
+    "group": "Accessories"
+  },
+  {
+    "id": "acc-tophat",
+    "name": "Dapper",
+    "group": "Accessories"
+  },
+  {
+    "id": "acc-astronaut",
+    "name": "Astronaut",
+    "group": "Accessories"
+  },
+  {
+    "id": "holiday-christmas",
+    "name": "Christmas",
+    "group": "Holidays"
+  },
+  {
+    "id": "holiday-halloween",
+    "name": "Halloween",
+    "group": "Holidays"
+  },
+  {
+    "id": "holiday-valentines",
+    "name": "Valentine's",
+    "group": "Holidays"
+  },
+  {
+    "id": "holiday-newyear",
+    "name": "New Year",
+    "group": "Holidays"
+  },
+  {
+    "id": "pride-rainbow",
+    "name": "Rainbow",
+    "group": "Pride"
+  },
+  {
+    "id": "pride-trans",
+    "name": "Trans",
+    "group": "Pride"
+  },
+  {
+    "id": "pride-bi",
+    "name": "Bi",
+    "group": "Pride"
+  },
+  {
+    "id": "pride-pan",
+    "name": "Pan",
+    "group": "Pride"
+  },
+  {
+    "id": "pride-lesbian",
+    "name": "Lesbian",
+    "group": "Pride"
+  },
+  {
+    "id": "pride-nonbinary",
+    "name": "Nonbinary",
+    "group": "Pride"
+  },
+  {
+    "id": "pride-ace",
+    "name": "Ace",
+    "group": "Pride"
+  },
+  {
+    "id": "pride-progress",
+    "name": "Progress",
+    "group": "Pride"
+  },
+  {
+    "id": "min-glyph",
+    "name": "Glyph",
+    "group": "Minimal"
+  },
+  {
+    "id": "min-outline",
+    "name": "Outline",
+    "group": "Minimal"
+  },
+  {
+    "id": "min-paperwhite",
+    "name": "Paper",
+    "group": "Minimal"
+  },
+  {
+    "id": "min-terminal",
+    "name": "Terminal",
+    "group": "Minimal"
+  },
+  {
+    "id": "min-blackout",
+    "name": "Blackout",
+    "group": "Minimal"
   }
 ]

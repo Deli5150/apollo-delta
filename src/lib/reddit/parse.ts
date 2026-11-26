@@ -35,6 +35,7 @@ function image(src?: Raw, resolutions?: Raw[]): MediaImage | undefined {
 
 /** Reddit's media_metadata entry (galleries, images and GIFs in comments and self posts). */
 function metaImage(m: Raw | undefined): MediaImage | undefined {
+  // Giphy GIFs (and Reddit's own animated uploads) carry the GIF and its MP4 in s.gif / s.mp4.
   if (!m || m.status !== 'valid' || !m.s) {
     // Reddit marks some gallery photos as failed but still has their files.
     if (m?.id && m.m) return { url: `https://i.redd.it/${m.id}.${String(m.m).split('/')[1] === 'jpeg' ? 'jpg' : String(m.m).split('/')[1]}`, width: 0, height: 0 }
@@ -56,12 +57,29 @@ export function mediaMetadata(raw?: Raw | null): Record<string, MediaImage> | un
   const out: Record<string, MediaImage> = {}
   for (const [k, v] of Object.entries(raw)) {
     const img = metaImage(v as Raw)
-    if (img) out[k] = img
+    if (!img) continue
+    out[k] = img
+    // Giphy entries are keyed "giphy|<id>" or "giphy|<id>|downsized"; the comment links to the
+    // GIF's giphy.com page (the entry's ext). Index both so the link finds its GIF.
+    const giphy = k.match(/^giphy\|([^|]+)/)?.[1]
+    if (giphy) out[`giphy|${giphy}`] ??= img
+    const ext = (v as Raw).ext
+    if (typeof ext === 'string') out[decode(ext)] ??= img
   }
   return out
 }
 
 const YT = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{11})/
+
+/** The media_metadata entry a link in a comment points at (an uploaded picture or GIF, or a Giphy GIF). */
+export function metaForHref(href: string, meta?: Record<string, MediaImage>): MediaImage | undefined {
+  if (!meta || !href) return undefined
+  if (meta[href]) return meta[href]
+  const giphy = href.match(/^giphy\|([^|]+)/)?.[1] ?? href.match(/giphy\.com\/(?:gifs|media|embed)\/(?:[^/?#]*-)?([A-Za-z0-9]+)(?:[/?#]|$)/)?.[1]
+  if (giphy) return meta[`giphy|${giphy}`]
+  const id = href.match(/(?:preview|i)\.redd\.it\/(?:[^/?#]*-)?(\w+)\.\w+/)?.[1]
+  return id ? meta[id] : undefined
+}
 
 export function youTubeId(url: string): { id: string; start?: number } | null {
   const m = url.match(YT)

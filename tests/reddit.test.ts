@@ -119,3 +119,16 @@ test('a new comment with nothing but an id falls back to what was sent', () => {
   assert.equal(c.parentId, 't3_p')
   assert.equal(c.bodyHtml, '<div class="md"><p>line one</p><p>&lt;b&gt;two&lt;/b&gt;</p></div>')
 })
+
+test('GIFs in comments: Giphy and uploaded GIFs find their media', async () => {
+  const { mediaMetadata, metaForHref } = await import('../src/lib/reddit/parse')
+  const meta = mediaMetadata({
+    'giphy|3o7TKSjRrfIPjeiVyM|downsized': { status: 'valid', e: 'AnimatedImage', t: 'giphy', ext: 'https://giphy.com/gifs/3o7TKSjRrfIPjeiVyM', s: { gif: 'https://external-preview.redd.it/a.gif?x=1&amp;s=2', mp4: 'https://external-preview.redd.it/a.mp4', x: 200, y: 150 } },
+    abc123: { status: 'valid', e: 'AnimatedImage', m: 'image/gif', s: { gif: 'https://i.redd.it/abc123.gif', mp4: 'https://preview.redd.it/abc123.gif?format=mp4', x: 300, y: 300 } }
+  })!
+  assert.equal(metaForHref('https://giphy.com/gifs/3o7TKSjRrfIPjeiVyM', meta)?.mp4, 'https://external-preview.redd.it/a.mp4')
+  assert.equal(metaForHref('https://giphy.com/gifs/funny-cat-3o7TKSjRrfIPjeiVyM', meta)?.width, 200)
+  assert.equal(metaForHref('giphy|3o7TKSjRrfIPjeiVyM', meta)?.url, 'https://external-preview.redd.it/a.gif?x=1&s=2')
+  assert.equal(metaForHref('https://preview.redd.it/abc123.gif?width=300&format=mp4', meta)?.width, 300)
+  assert.equal(metaForHref('https://example.com/x.gif', meta), undefined)
+})

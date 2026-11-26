@@ -368,29 +368,229 @@ function halloween() {
 }
 
 // ── Apollo Delta's own icon (src/ui/AppIcon.tsx iconSvg), full-bleed, for its colourways ───────
-function apolloSvg(s) {
+function apolloSvg(s, o = {}) {
+  // o (all optional): bg — markup replacing the gradient background; noStars; noAntenna;
+  // back / front — markup in the robot's own coordinates, behind it / in front of it;
+  // face — markup in the face's coordinates (over the eyes); over — markup over everything;
+  // outline — draw the body as a line of that colour; shadow — a soft shadow under the robot.
   const ART = 'translate(512 530) scale(1.12) translate(-512 -530)'
   const FACE = 'translate(512 767) scale(1.22) translate(-512 -767)'
   const id = 'ad' + uid++
+  const stars = o.noStars ? '' : `<g fill="#fff"><circle cx="190" cy="210" r="9" opacity="0.8"/><circle cx="840" cy="170" r="7" opacity="0.7"/><circle cx="880" cy="430" r="6" opacity="0.55"/><circle cx="140" cy="520" r="6" opacity="0.5"/><circle cx="770" cy="880" r="8" opacity="0.6"/><circle cx="250" cy="860" r="5" opacity="0.5"/></g>`
+  const tri = 'M 512 300 L 768 740 L 256 740 Z'
+  const glassBody = o.glass
+    ? `<g opacity="${o.glass}"><path d="${tri}" fill="url(#${id}b)" stroke="url(#${id}b)" stroke-width="120" stroke-linejoin="round"/></g>
+<mask id="${id}rim"><path d="${tri}" fill="#fff" stroke="#fff" stroke-width="132" stroke-linejoin="round"/><path d="${tri}" fill="#000" stroke="#000" stroke-width="112" stroke-linejoin="round"/></mask>
+<rect width="1024" height="1024" fill="#fff" opacity="0.9" mask="url(#${id}rim)"/>
+<mask id="${id}shine"><path d="${tri}" fill="#fff" stroke="#fff" stroke-width="112" stroke-linejoin="round"/></mask>
+<ellipse cx="420" cy="380" rx="150" ry="220" transform="rotate(30 420 380)" fill="#fff" opacity="0.22" mask="url(#${id}shine)"/>`
+    : ''
+  const body = o.glass ? glassBody : o.outline
+    ? `<path d="${tri}" fill="${o.outline}" stroke="${o.outline}" stroke-width="170" stroke-linejoin="round"/><path d="${tri}" fill="url(#${id}b)" stroke="url(#${id}b)" stroke-width="120" stroke-linejoin="round"/>`
+    : `<path d="${tri}" fill="url(#${id}b)" stroke="url(#${id}b)" stroke-width="120" stroke-linejoin="round"/>`
+  const antenna = o.noAntenna ? '' : `<line x1="512" y1="300" x2="512" y2="196" stroke="${o.antenna || s.body[0]}" stroke-width="30" stroke-linecap="round"/><circle cx="512" cy="172" r="40" fill="${s.orb}"/>`
+  const cheeks = s.cheeks === false ? '' : `<ellipse cx="392" cy="690" rx="26" ry="15" fill="${s.cheeks || '#ff9ab8'}" opacity="0.75"/><ellipse cx="632" cy="690" rx="26" ry="15" fill="${s.cheeks || '#ff9ab8'}" opacity="0.75"/>`
+  const eyes = o.noEyes ? '' : `<ellipse cx="462" cy="572" rx="30" ry="38" fill="${s.eyes}"/><ellipse cx="562" cy="572" rx="30" ry="38" fill="${s.eyes}"/>
+<circle cx="472" cy="558" r="10" fill="#fff"/><circle cx="572" cy="558" r="10" fill="#fff"/>`
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
 <defs><linearGradient id="${id}bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${s.bg[0]}"/><stop offset="0.55" stop-color="${s.bg[1]}"/><stop offset="1" stop-color="${s.bg[2]}"/></linearGradient>
-<radialGradient id="${id}h" cx="0.5" cy="0.42" r="0.55"><stop offset="0" stop-color="#fff" stop-opacity="0.28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-<linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.body[0]}"/><stop offset="1" stop-color="${s.body[1]}"/></linearGradient></defs>
-<rect width="1024" height="1024" fill="url(#${id}bg)"/><rect width="1024" height="1024" fill="url(#${id}h)"/>
-<g fill="#fff"><circle cx="190" cy="210" r="9" opacity="0.8"/><circle cx="840" cy="170" r="7" opacity="0.7"/><circle cx="880" cy="430" r="6" opacity="0.55"/><circle cx="140" cy="520" r="6" opacity="0.5"/><circle cx="770" cy="880" r="8" opacity="0.6"/><circle cx="250" cy="860" r="5" opacity="0.5"/></g>
-<g transform="${ART}">
+<radialGradient id="${id}h" cx="0.5" cy="0.42" r="0.55"><stop offset="0" stop-color="#fff" stop-opacity="${o.bg ? 0.16 : 0.28}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.body[0]}"/><stop offset="1" stop-color="${s.body[1]}"/></linearGradient>
+<filter id="${id}sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="22" flood-color="#000" flood-opacity="0.38"/></filter>${o.defs || ''}</defs>
+${o.bg || `<rect width="1024" height="1024" fill="url(#${id}bg)"/>`}<rect width="1024" height="1024" fill="url(#${id}h)"/>
+${stars}${o.backdrop || ''}
+<g transform="${ART}"${o.shadow ? ` filter="url(#${id}sh)"` : ''}>
+${o.back || ''}
 <path d="M 168 742 A 360 92 -12 0 1 856 596" fill="none" stroke="${s.ring[0]}" stroke-width="30" stroke-linecap="round"/>
-<line x1="512" y1="300" x2="512" y2="196" stroke="${s.body[0]}" stroke-width="30" stroke-linecap="round"/>
-<circle cx="512" cy="172" r="40" fill="${s.orb}"/>
-<path d="M 512 300 L 768 740 L 256 740 Z" fill="url(#${id}b)" stroke="url(#${id}b)" stroke-width="120" stroke-linejoin="round"/>
+${antenna}
+${body}
 <g transform="${FACE}"><path d="M 396 520 Q 512 470 628 520 Q 660 600 600 640 Q 512 668 424 640 Q 364 600 396 520 Z" fill="${s.visor}"/>
-<ellipse cx="462" cy="572" rx="30" ry="38" fill="${s.eyes}"/><ellipse cx="562" cy="572" rx="30" ry="38" fill="${s.eyes}"/>
-<circle cx="472" cy="558" r="10" fill="#fff"/><circle cx="572" cy="558" r="10" fill="#fff"/>
-<path d="M 478 696 Q 512 722 546 696" fill="none" stroke="${s.visor}" stroke-width="16" stroke-linecap="round"/>
-<ellipse cx="392" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/><ellipse cx="632" cy="690" rx="26" ry="15" fill="#ff9ab8" opacity="0.75"/></g>
+${eyes}
+<path d="M 478 696 Q 512 722 546 696" fill="none" stroke="${s.mouth || s.visor}" stroke-width="16" stroke-linecap="round"/>
+${cheeks}${o.face || ''}</g>
 <path d="M 856 596 A 360 92 -12 0 1 168 742" fill="none" stroke="${s.ring[1]}" stroke-width="34" stroke-linecap="round"/>
-</g></svg>`
+${o.front || ''}
+</g>${o.over || ''}</svg>`
 }
+
+// ── Apollo Delta's themed sets (original artwork, all built on the delta robot) ───────────────
+const rng = (seed) => () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
+/** Horizontal flag stripes filling the square. */
+const stripes = (cols) => cols.map((c, i) => `<rect x="0" y="${(1024 * i / cols.length).toFixed(1)}" width="1024" height="${(1024 / cols.length + 1).toFixed(1)}" fill="${c}"/>`).join('')
+const WHITE_BOT = { bg: ['#000', '#000', '#000'], body: ['#ffffff', '#e4e8f4'], visor: '#1c2257', eyes: '#7fe3ff', ring: ['#e8b43a', '#ffd45c'], orb: '#ffd45c' }
+const PRIDE = [
+  ['Rainbow', ['#e40303', '#ff8c00', '#ffed00', '#008026', '#004dff', '#750787']],
+  ['Trans', ['#5bcefa', '#f5a9b8', '#ffffff', '#f5a9b8', '#5bcefa']],
+  ['Bi', ['#d60270', '#d60270', '#9b4f96', '#0038a8', '#0038a8']],
+  ['Pan', ['#ff218c', '#ffd800', '#21b1ff']],
+  ['Lesbian', ['#d52d00', '#ff9a56', '#ffffff', '#d362a4', '#a30262']],
+  ['Nonbinary', ['#fcf434', '#ffffff', '#9c59d1', '#2c2c2c']],
+  ['Ace', ['#000000', '#a3a3a3', '#ffffff', '#800080']]
+]
+function progress() {
+  // Rainbow stripes with the chevron of the Progress flag on the left.
+  const ch = ['#000000', '#613915', '#5bcefa', '#f5a9b8', '#ffffff']
+  const chev = ch.map((c, i) => { const w = 470 - i * 80, t = i * 0; return `<path d="M${-80 - i * 80} 0 L${w} 512 L${-80 - i * 80} 1024 Z" fill="${c}"/>` }).join('')
+  return apolloSvg({ ...WHITE_BOT, ring: ['#ffffff', '#ffffff'], orb: '#ffffff' }, { bg: stripes(PRIDE[0][1]) + chev, noStars: true, shadow: true })
+}
+const pride = () => [
+  ...PRIDE.map(([name, cols]) => ({ id: `pride-${slug(name)}`, name, group: 'Pride', svg: apolloSvg({ ...WHITE_BOT, ring: ['#ffffff', '#ffffff'], orb: '#ffffff' }, { bg: stripes(cols), noStars: true, shadow: true }) })),
+  { id: 'pride-progress', name: 'Progress', group: 'Pride', svg: progress() }
+]
+
+// Accessories, in the robot's coordinates (head apex ≈ 512,240; sides at y=560 ≈ x 300 / 724).
+const santaHat = `<path d="M 404 352 Q 420 190 520 150 Q 640 110 716 214 Q 650 180 610 236 Q 600 300 620 352 Z" fill="#d8262e"/><path d="M 520 150 Q 600 120 660 160 Q 600 170 560 220 Z" fill="#ff5a5f" opacity="0.5"/>
+<rect x="380" y="320" width="264" height="74" rx="37" fill="#fff"/><circle cx="724" cy="222" r="46" fill="#fff"/>`
+const crown = `<path d="M 404 330 L 392 196 L 456 262 L 512 168 L 568 262 L 632 196 L 620 330 Z" fill="#ffc83a" stroke="#c98a10" stroke-width="12" stroke-linejoin="round"/>
+<rect x="400" y="300" width="224" height="40" rx="12" fill="#e8a820"/><circle cx="512" cy="268" r="18" fill="#e23a6e"/><circle cx="452" cy="296" r="12" fill="#3ad0ff"/><circle cx="572" cy="296" r="12" fill="#3ad0ff"/>
+<circle cx="392" cy="196" r="14" fill="#ffe08a"/><circle cx="512" cy="168" r="16" fill="#ffe08a"/><circle cx="632" cy="196" r="14" fill="#ffe08a"/>`
+const partyHat = `<path d="M 432 340 L 512 132 L 592 340 Z" fill="#ff5cb0"/><path d="M 470 240 L 556 240 L 566 270 L 460 270 Z M 446 306 L 580 306 L 588 330 L 438 330 Z" fill="#ffe14a"/>
+<circle cx="512" cy="126" r="30" fill="#5ce1ff"/><path d="M 512 96 l 8 -30 M 512 96 l -22 -22 M 512 96 l 26 -18" stroke="#ffe14a" stroke-width="10" stroke-linecap="round"/>`
+const shades = `<path d="M 404 540 Q 404 522 424 522 H 494 Q 512 522 510 544 L 504 590 Q 500 616 472 616 H 440 Q 410 616 406 588 Z M 620 540 Q 620 522 600 522 H 530 Q 512 522 514 544 L 520 590 Q 524 616 552 616 H 584 Q 614 616 618 588 Z" fill="#0b0b12"/>
+<path d="M 490 540 H 534" stroke="#0b0b12" stroke-width="14"/><path d="M 430 540 L 456 540 L 432 574 Z M 548 540 L 574 540 L 550 574 Z" fill="#fff" opacity="0.55"/>`
+const headphonesBack = `<path d="M 290 600 Q 280 236 512 228 Q 744 236 734 600" fill="none" stroke="#24242e" stroke-width="40" stroke-linecap="round"/><path d="M 300 560 Q 300 262 512 254 Q 724 262 724 560" fill="none" stroke="#3c3c4a" stroke-width="10" stroke-linecap="round" opacity="0.6"/>`
+const headphonesFront = `<rect x="236" y="530" width="96" height="164" rx="46" fill="#ff4f6a"/><rect x="692" y="530" width="96" height="164" rx="46" fill="#ff4f6a"/>
+<rect x="300" y="548" width="36" height="128" rx="18" fill="#24242e"/><rect x="688" y="548" width="36" height="128" rx="18" fill="#24242e"/>
+<rect x="252" y="552" width="22" height="70" rx="11" fill="#fff" opacity="0.4"/><rect x="708" y="552" width="22" height="70" rx="11" fill="#fff" opacity="0.4"/>`
+const helmet = `<circle cx="512" cy="520" r="372" fill="#bfe6ff" fill-opacity="0.12" stroke="#eaf6ff" stroke-width="22"/>
+<path d="M 300 330 A 300 300 0 0 1 470 214" fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round" opacity="0.7"/><circle cx="292" cy="384" r="14" fill="#fff" opacity="0.7"/>`
+const topHat = `<ellipse cx="512" cy="336" rx="168" ry="34" fill="#15151c"/><rect x="420" y="150" width="184" height="190" rx="18" fill="#1d1d26"/><rect x="420" y="280" width="184" height="36" fill="#d8262e"/><rect x="432" y="162" width="26" height="150" rx="13" fill="#fff" opacity="0.12"/>`
+
+function space(seed, bg = '#0b0b24') {
+  const r = rng(seed)
+  let d = `<rect width="1024" height="1024" fill="${bg}"/><circle cx="820" cy="210" r="250" fill="#7b5cff" opacity="0.18"/><circle cx="210" cy="860" r="300" fill="#ff5cf0" opacity="0.12"/>`
+  for (let i = 0; i < 70; i++) d += `<circle cx="${(r() * 1024).toFixed(0)}" cy="${(r() * 1024).toFixed(0)}" r="${(1.5 + r() * 4).toFixed(1)}" fill="#fff" opacity="${(0.35 + r() * 0.6).toFixed(2)}"/>`
+  return d + `<circle cx="850" cy="840" r="70" fill="#ff9e5c"/><path d="M 760 870 Q 850 800 944 812" fill="none" stroke="#ffd0a8" stroke-width="12" stroke-linecap="round"/>`
+}
+const accessories = () => [
+  { id: 'acc-shades', name: 'Shades', group: 'Accessories', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#ffb36b', '#ff7a5c', '#e2366f'] }, { face: shades }) },
+  { id: 'acc-headphones', name: 'Headphones', group: 'Accessories', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#5ce1ff', '#2f8bff', '#2a3fc4'] }, { back: headphonesBack, front: headphonesFront }) },
+  { id: 'acc-crown', name: 'Royal', group: 'Accessories', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#b083ff', '#7a3fe0', '#3e1490'] }, { noAntenna: true, front: crown }) },
+  { id: 'acc-tophat', name: 'Dapper', group: 'Accessories', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#5cbf8a', '#2a8a6a', '#0f4a44'] }, { noAntenna: true, front: topHat }) },
+  { id: 'acc-astronaut', name: 'Astronaut', group: 'Accessories', svg: apolloSvg(AD_DEFAULT, { bg: space(7), noStars: true, over: '', front: helmet }) }
+]
+
+function snow(seed, n, maxY = 1024) {
+  const r = rng(seed)
+  let d = ''
+  for (let i = 0; i < n; i++) d += `<circle cx="${(r() * 1024).toFixed(0)}" cy="${(r() * maxY).toFixed(0)}" r="${(4 + r() * 9).toFixed(1)}" fill="#fff" opacity="${(0.5 + r() * 0.5).toFixed(2)}"/>`
+  return d
+}
+const heart = (x, y, s, c, op = 1, rot = 0) => `<path transform="translate(${x} ${y}) rotate(${rot}) scale(${s})" d="M0 30 C -40 0 -40 -32 -18 -36 C -6 -38 0 -28 0 -22 C 0 -28 6 -38 18 -36 C 40 -32 40 0 0 30 Z" fill="${c}" opacity="${op}"/>`
+function fireworks() {
+  const burst = (x, y, r, c) => { let d = ''; for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; d += `<path d="M${(x + Math.cos(a) * r * 0.35).toFixed(0)} ${(y + Math.sin(a) * r * 0.35).toFixed(0)} L${(x + Math.cos(a) * r).toFixed(0)} ${(y + Math.sin(a) * r).toFixed(0)}" stroke="${c}" stroke-width="10" stroke-linecap="round"/><circle cx="${(x + Math.cos(a) * r * 1.12).toFixed(0)}" cy="${(y + Math.sin(a) * r * 1.12).toFixed(0)}" r="7" fill="${c}"/>` } return d }
+  return burst(190, 200, 120, '#ffd45c') + burst(840, 170, 100, '#ff5cb0') + burst(880, 520, 70, '#5ce1ff') + burst(150, 560, 60, '#7dff9a')
+}
+const holidays = () => [
+  { id: 'holiday-christmas', name: 'Christmas', group: 'Holidays', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#1f3a8a', '#13235a', '#070d26'] }, { noStars: true, noAntenna: true, backdrop: snow(3, 46), front: santaHat, over: `<path d="M0 930 Q 150 880 300 920 Q 460 960 620 912 Q 800 870 1024 920 V1024 H0 Z" fill="#f2f7ff"/>` }) },
+  { id: 'holiday-halloween', name: 'Halloween', group: 'Holidays', svg: apolloSvg({ bg: ['#3a1f5a', '#1d0f33', '#0a0611'], body: ['#ff9a2a', '#e0620e'], visor: '#2a1206', eyes: '#ffe14a', ring: ['#7dff6a', '#b0ff8a'], orb: '#7dff6a', cheeks: false, mouth: '#ffe14a', antenna: '#3d7a1e' }, { backdrop: `<circle cx="820" cy="190" r="110" fill="#ffd27a" opacity="0.9"/><circle cx="790" cy="170" r="16" fill="#e5a243" opacity="0.5"/>` }) },
+  { id: 'holiday-valentines', name: "Valentine's", group: 'Holidays', svg: apolloSvg({ bg: ['#ffb3cf', '#ff6f9e', '#d9306a'], body: ['#ffffff', '#ffe6f0'], visor: '#5a0f2e', eyes: '#ff5c8a', ring: ['#ffffff', '#ffe6f0'], orb: '#ff3d74' }, { noStars: true, backdrop: heart(180, 220, 2.2, '#fff', 0.5, -14) + heart(850, 190, 1.6, '#fff', 0.45, 12) + heart(880, 820, 2.4, '#fff', 0.35, 18) + heart(150, 820, 1.4, '#fff', 0.45, -10), noEyes: true, face: heart(462, 572, 1.25, '#ff3d74') + heart(562, 572, 1.25, '#ff3d74') }) },
+  { id: 'holiday-newyear', name: 'New Year', group: 'Holidays', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#2a2a5a', '#14143a', '#06061a'], orb: '#5ce1ff' }, { noStars: true, noAntenna: true, backdrop: fireworks(), front: partyHat }) }
+]
+
+const terminal = { bg: ['#041a0a', '#020d05', '#000000'], body: ['#3dff7a', '#14a844'], visor: '#021006', eyes: '#9dffb8', ring: ['#14a844', '#3dff7a'], orb: '#9dffb8', cheeks: false }
+const scan = () => { let d = ''; for (let y = 0; y < 1024; y += 12) d += `<rect y="${y}" width="1024" height="5" fill="#000" opacity="0.28"/>`; return d }
+// Glass packs: a see-through robot over soft blurred colour.
+const blobs = (cols, seed) => {
+  const r = rng(seed)
+  return `<g filter="url(#blur)">${cols.map((c, i) => `<circle cx="${(150 + r() * 724).toFixed(0)}" cy="${(150 + r() * 724).toFixed(0)}" r="${(220 + r() * 160).toFixed(0)}" fill="${c}" opacity="0.9"/>`).join('')}</g>`
+}
+const BLUR = `<filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="90"/></filter>`
+const FROSTED = [
+  ['Frost', ['#7fa6ff', '#4554f2', '#3a2bc4'], ['#5ce1ff', '#b083ff', '#ffd45c']],
+  ['Peach', ['#ffc49a', '#ff8a6b', '#e2507a'], ['#ffe08a', '#ff6fae', '#ffb36b']],
+  ['Lagoon', ['#7ff0d0', '#1fbf9f', '#0d6f73'], ['#a5ffe1', '#2fd0e0', '#e8ff8a']],
+  ['Orchid', ['#d2b0ff', '#9a5cff', '#5a1fcf'], ['#ff9cf6', '#7b5cff', '#5ce1ff']],
+  ['Cinder', ['#ff9a6b', '#e8452c', '#8a1a2a'], ['#ffd45c', '#ff5a2a', '#ff6fae']],
+  ['Glacier', ['#d8f4ff', '#8fd0ff', '#4a8ae0'], ['#ffffff', '#5ce1ff', '#b8c8ff']],
+  ['Meadow', ['#b8f28a', '#4fbf5a', '#1a6a3a'], ['#fff35c', '#7dff9a', '#2fd0e0']],
+  ['Smoke', ['#9aa0b4', '#5a6074', '#2a2e3a'], ['#c8d0dc', '#8a92a8', '#ffffff']]
+]
+const frosted = () => FROSTED.map(([name, bg, glow], i) => ({
+  id: `frost-${slug(name)}`, name, group: 'Frosted',
+  svg: apolloSvg({ bg, body: ['#ffffff', '#ffffff'], visor: '#14183a', eyes: '#9ff0ff', ring: ['#ffffff', '#ffffff'], orb: '#ffffff', cheeks: '#ff9ab8' }, { glass: 0.42, noStars: true, defs: BLUR, backdrop: blobs(glow, 20 + i), shadow: true })
+}))
+const CRYSTAL = [
+  ['Prism', ['#ff5cf0', '#5ce1ff', '#fff35c'], '#5ce1ff'],
+  ['Aurora', ['#5cffa8', '#2f8bff', '#b083ff'], '#7dffc4'],
+  ['Ruby', ['#ff3b5c', '#ff8a3d', '#9a1f6a'], '#ff6b8a'],
+  ['Sapphire', ['#2f6bff', '#5ce1ff', '#3a2bc4'], '#8fd0ff'],
+  ['Topaz', ['#ffb020', '#ffe14a', '#ff6a2a'], '#ffe08a'],
+  ['Amethyst', ['#9a5cff', '#ff5cf0', '#4a1fae'], '#d0a8ff']
+]
+const crystal = () => CRYSTAL.map(([name, glow, eye], i) => ({
+  id: `crystal-${slug(name)}`, name, group: 'Crystal',
+  svg: apolloSvg({ bg: ['#12121e', '#0a0a12', '#040408'], body: ['#ffffff', '#cfd6ff'], visor: '#05050c', eyes: eye, ring: [glow[0], glow[1]], orb: eye, cheeks: false }, { glass: 0.22, noStars: true, defs: BLUR, backdrop: blobs(glow, 40 + i) })
+}))
+
+
+// ── Moods: the robot's face, changed (face coordinates: eyes at 462/562, 572; visor 396–628) ──
+const eyePair = (fn) => fn(462) + fn(562)
+const MOODS = [
+  ['Sleepy', eyePair((x) => `<path d="M ${x - 30} 574 Q ${x} 600 ${x + 30} 574" fill="none" stroke="#7fe3ff" stroke-width="14" stroke-linecap="round"/>`), `<g fill="#fff" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-weight="800"><text x="720" y="300" font-size="110">z</text><text x="800" y="220" font-size="80" opacity="0.8">z</text><text x="860" y="160" font-size="56" opacity="0.6">z</text></g>`, ['#4a5bd6', '#2f2f8a', '#151540']],
+  ['Wink', `<ellipse cx="462" cy="572" rx="30" ry="38" fill="#7fe3ff"/><circle cx="472" cy="558" r="10" fill="#fff"/><path d="M 534 578 Q 562 552 590 578" fill="none" stroke="#7fe3ff" stroke-width="14" stroke-linecap="round"/>`, '', ['#ffb36b', '#ff7a5c', '#d9367a']],
+  ['Starstruck', eyePair((x) => `<path transform="translate(${x} 574) scale(1.5)" d="M0 -26 L7.6 -8 L27 -8 L11.6 4 L17 23 L0 12 L-17 23 L-11.6 4 L-27 -8 L-7.6 -8 Z" fill="#ffd45c"/>`), '', ['#b083ff', '#7a3fe0', '#3e1490']],
+  ['Grumpy', eyePair((x) => `<ellipse cx="${x}" cy="584" rx="28" ry="24" fill="#ff6a5c"/>`) + `<path d="M 424 536 L 494 556 M 600 536 L 530 556" stroke="#ff6a5c" stroke-width="14" stroke-linecap="round"/>`, '', ['#ff7a45', '#c8302a', '#6a121a']],
+  ['Dizzy', eyePair((x) => `<path d="M ${x} 574 m -4 0 a 4 4 0 1 1 8 0 a 10 10 0 1 1 -18 0 a 16 16 0 1 1 30 0 a 22 22 0 1 1 -42 0" fill="none" stroke="#a5ffe1" stroke-width="7" stroke-linecap="round"/>`), '', ['#4fe0b0', '#1fbf8f', '#0d5d63']],
+  ['Cyclops', `<ellipse cx="512" cy="570" rx="52" ry="56" fill="#7fe3ff"/><circle cx="512" cy="570" r="24" fill="#0b1030"/><circle cx="528" cy="552" r="12" fill="#fff"/>`, '', ['#5cbf6a', '#2e8a4a', '#123d2a']]
+]
+const moods = () => MOODS.map(([name, face, over, bg]) => ({
+  id: `mood-${slug(name)}`, name, group: 'Moods',
+  svg: apolloSvg({ ...AD_DEFAULT, bg }, { noEyes: true, face, over })
+}))
+
+// ── Remix: costumes and patterns ───────────────────────────────────────────────────────────
+const halo = `<ellipse cx="512" cy="168" rx="120" ry="32" fill="none" stroke="#ffe27a" stroke-width="26"/><ellipse cx="512" cy="168" rx="120" ry="32" fill="none" stroke="#fff6c4" stroke-width="8" opacity="0.8"/>`
+const horns = `<path d="M 452 300 Q 410 230 430 160 Q 470 230 500 278 Z M 572 300 Q 614 230 594 160 Q 554 230 524 278 Z" fill="#ff3b3b" stroke="#a01818" stroke-width="8" stroke-linejoin="round"/>`
+const ears = `<path d="M 440 330 L 420 190 L 500 270 Z M 584 330 L 604 190 L 524 270 Z" fill="#ffffff" stroke="#dfe5ff" stroke-width="10" stroke-linejoin="round"/><path d="M 440 300 L 432 222 L 478 270 Z M 584 300 L 592 222 L 546 270 Z" fill="#ff9ab8"/>`
+const whiskers = `<path d="M 380 640 L 300 620 M 380 660 L 296 668 M 644 640 L 724 620 M 644 660 L 728 668" stroke="#1c2257" stroke-width="8" stroke-linecap="round"/>`
+const ghostSheet = `<path d="M 300 760 Q 290 420 512 250 Q 734 420 724 760 Q 690 730 660 770 Q 620 730 586 770 Q 550 730 512 770 Q 474 730 438 770 Q 404 730 364 770 Q 334 730 300 760 Z" fill="#f4f2ff" opacity="0.94"/>
+<ellipse cx="462" cy="520" rx="28" ry="38" fill="#1a1233"/><ellipse cx="562" cy="520" rx="28" ry="38" fill="#1a1233"/><ellipse cx="512" cy="610" rx="20" ry="26" fill="#1a1233"/>`
+function wrapped() {
+  let st = '<rect width="1024" height="1024" fill="#d8262e"/>'
+  for (let i = -1024; i < 2048; i += 120) st += `<path d="M ${i} 0 L ${i + 1024} 1024" stroke="#ffffff" stroke-width="34" opacity="0.9"/><path d="M ${i + 60} 0 L ${i + 1084} 1024" stroke="#2e8a4a" stroke-width="16"/>`
+  const ribbon = `<rect x="472" y="0" width="80" height="1024" fill="#ffd45c"/><rect x="0" y="472" width="1024" height="80" fill="#ffd45c" opacity="0.0"/>`
+  return st + ribbon
+}
+const bow = `<path d="M 512 250 Q 420 150 380 230 Q 400 300 512 262 Q 624 300 644 230 Q 604 150 512 250 Z" fill="#ffd45c" stroke="#d99a10" stroke-width="10" stroke-linejoin="round"/><circle cx="512" cy="256" r="28" fill="#ffe27a" stroke="#d99a10" stroke-width="8"/>`
+const gloss = `<path d="M 0 0 H 1024 V 420 Q 512 560 0 420 Z" fill="#fff" opacity="0.28"/>`
+const remix = () => [
+  { id: 'remix-halo', name: 'Angel', group: 'Remix', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#9fd0ff', '#6f8bff', '#5a4bd6'] }, { noAntenna: true, front: halo }) },
+  { id: 'remix-horns', name: 'Mischief', group: 'Remix', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#5a1a2a', '#2a0a14', '#0a0206'], eyes: '#ff5c5c', ring: ['#ff3b3b', '#ff8a8a'] }, { noAntenna: true, front: horns }) },
+  { id: 'remix-kitty', name: 'Kitty', group: 'Remix', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#ffd0e4', '#ff9fc6', '#e2569a'], eyes: '#9dffb8' }, { noAntenna: true, front: ears, face: whiskers }) },
+  { id: 'remix-ghost', name: 'Boo', group: 'Remix', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#3a2f6a', '#1d1640', '#0a0618'], ring: ['#b9a6ff', '#d6ccff'], orb: '#b9a6ff' }, { front: ghostSheet }) },
+  { id: 'remix-wrapped', name: 'Gift Wrap', group: 'Remix', svg: apolloSvg(AD_DEFAULT, { bg: wrapped(), noStars: true, noAntenna: true, front: bow, shadow: true }) },
+  { id: 'remix-glossy', name: 'Gloss', group: 'Remix', svg: apolloSvg({ ...AD_DEFAULT, bg: ['#7fe0ff', '#2a9cff', '#1a4fd6'] }, { noStars: true, over: gloss }) }
+]
+
+// ── Two-Tone: a coloured robot on a pale ground ────────────────────────────────────────────
+const TWO_TONE = [
+  ['Teal', '#e2fbf7', ['#2fd0c0', '#0f8f8a'], '#06302e', '#ffd45c'],
+  ['Peach', '#fff0e6', ['#ffab7a', '#ff7350'], '#4a1a10', '#fff2a8'],
+  ['Lime', '#f2ffe0', ['#a8e83a', '#5fae1a'], '#1a3008', '#ffffff'],
+  ['Berry', '#fbe8f4', ['#e84a9a', '#a8236a'], '#3a0a24', '#ffd0e4'],
+  ['Cobalt', '#e6ecff', ['#4b6bff', '#2a2bb4'], '#0a0c3a', '#7fe3ff'],
+  ['Tangerine', '#fff4e0', ['#ffb020', '#ff7a10'], '#3a2000', '#ffffff']
+]
+const twoTone = () => TWO_TONE.map(([name, ground, body, visor, eyes]) => ({
+  id: `two-${slug(name)}`, name, group: 'Two-Tone',
+  svg: apolloSvg({ bg: [ground, ground, ground], body, visor, eyes, ring: [body[1], body[0]], orb: body[0], cheeks: false }, { noStars: true, antenna: body[0] })
+}))
+
+// More glass: the angel and the kitty in frosted glass.
+const glassMore = () => [
+  { id: 'frost-halo', name: 'Angel Frost', group: 'Frosted', svg: apolloSvg({ bg: ['#9fd0ff', '#6f8bff', '#5a4bd6'], body: ['#ffffff', '#ffffff'], visor: '#14183a', eyes: '#9ff0ff', ring: ['#ffffff', '#ffffff'], orb: '#ffffff', cheeks: '#ff9ab8' }, { glass: 0.42, noStars: true, noAntenna: true, defs: BLUR, backdrop: blobs(['#fff6c4', '#b083ff', '#5ce1ff'], 61), front: halo, shadow: true }) },
+  { id: 'crystal-kitty', name: 'Crystal Kitty', group: 'Crystal', svg: apolloSvg({ bg: ['#12121e', '#0a0a12', '#040408'], body: ['#ffffff', '#cfd6ff'], visor: '#05050c', eyes: '#9dffb8', ring: ['#ff5cf0', '#ff9cf6'], orb: '#ff9cf6', cheeks: false }, { glass: 0.22, noStars: true, noAntenna: true, defs: BLUR, backdrop: blobs(['#ff5cf0', '#7b5cff', '#5cffa8'], 71), front: ears.replaceAll('#ffffff', 'rgba(255,255,255,0.35)') }) }
+]
+
+const minimal = () => [
+  { id: 'min-glyph', name: 'Glyph', group: 'Minimal', svg: apolloSvg({ bg: ['#4554f2', '#4554f2', '#4554f2'], body: ['#ffffff', '#ffffff'], visor: '#4554f2', eyes: '#ffffff', ring: ['#ffffff', '#ffffff'], orb: '#ffffff', cheeks: false }, { noStars: true }) },
+  { id: 'min-outline', name: 'Outline', group: 'Minimal', svg: apolloSvg({ bg: ['#101218', '#101218', '#101218'], body: ['#101218', '#101218'], visor: '#ffffff', eyes: '#101218', ring: ['#ffffff', '#ffffff'], orb: '#ffffff', cheeks: false, mouth: '#ffffff' }, { noStars: true, outline: '#ffffff', antenna: '#ffffff' }) },
+  { id: 'min-paperwhite', name: 'Paper', group: 'Minimal', svg: apolloSvg({ bg: ['#f6f4ef', '#f6f4ef', '#f6f4ef'], body: ['#f6f4ef', '#f6f4ef'], visor: '#1a1a1a', eyes: '#f6f4ef', ring: ['#1a1a1a', '#1a1a1a'], orb: '#1a1a1a', cheeks: false, mouth: '#1a1a1a' }, { noStars: true, outline: '#1a1a1a', antenna: '#1a1a1a' }) },
+  { id: 'min-terminal', name: 'Terminal', group: 'Minimal', svg: apolloSvg(terminal, { noStars: true, over: scan() + `<rect width="1024" height="1024" fill="url(#vig)"/>`, defs: `<radialGradient id="vig" cx="0.5" cy="0.5" r="0.7"><stop offset="0.6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.6"/></radialGradient>` }) },
+  { id: 'min-blackout', name: 'Blackout', group: 'Minimal', svg: apolloSvg({ bg: ['#16161a', '#0c0c0e', '#000000'], body: ['#2a2a30', '#18181c'], visor: '#000000', eyes: '#ff3b3b', ring: ['#2a2a30', '#3a3a42'], orb: '#ff3b3b', cheeks: false }, { noStars: true }) }
+]
+
 const AD_DEFAULT = { bg: ['#5f86ff', '#4554f2', '#3a2bc4'], body: ['#ffffff', '#dfe5ff'], visor: '#1c2257', eyes: '#7fe3ff', ring: ['#e8b43a', '#ffd45c'], orb: '#ffd45c' }
 const WL_DEFAULT = { bg: ['#ff6271', '#e23a4e', '#a5172c'], fg: '#ffffff' }
 
@@ -407,7 +607,17 @@ const CATALOGUE = {
   apollo: () => [
     { id: 'default', name: 'Delta', group: 'Colours', svg: apolloSvg(AD_DEFAULT) },
     ...AD_COLOURS.map(([name, c]) => ({ id: name === 'Daylight' ? 'light' : slug(name), name, group: 'Colours', svg: apolloSvg(c) })),
-    ...artStyles(APPS[1])
+    ...artStyles(APPS[1]),
+    ...frosted(),
+    ...crystal(),
+    ...glassMore(),
+    ...moods(),
+    ...remix(),
+    ...twoTone(),
+    ...accessories(),
+    ...holidays(),
+    ...pride(),
+    ...minimal()
   ],
   watchlist: () => [
     { id: 'default', name: 'Cinema', group: 'Colours', svg: classicWL(WL_DEFAULT) },

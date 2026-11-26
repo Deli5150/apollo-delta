@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.5] - 2026-11-26
+
+- GIFs in comments: Giphy GIFs and GIFs people upload now play right in the thread, on Android, Mac and Windows (#12).
+- A new App Icon picker: featured icons at the top, then icon packs in sections (Glass, Character and Standard). Tap a pack to see its icons; the one you're using is ringed and checked.
+- 56 new app icons in nine packs, all original art of the Apollo Delta robot: Frosted and Crystal (glass), Moods, Remix, Dress-Up, Holidays, Two-Tone, Minimal and Pride.
+
 ## [1.0.4] - 2026-11-24
 
 - Summarize Comments on Mac and Windows: the same summaries as on Android, written on your computer by the same free open-source model (Qwen2.5 1.5B), so nothing is sent anywhere. It's a one-time 1.1 GB download the first time; Settings can delete it. Stop, folding and the guard against repeating work the same way.

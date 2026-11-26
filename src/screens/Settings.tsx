@@ -20,7 +20,7 @@ import { checkForUpdates, useUpdate } from '../lib/updater'
 import { VERSION } from '../version'
 import { go, openExternal, type RootParams } from '../nav'
 import { copy, fail } from '../ui/actions'
-import { AppIcon, dockIcon, ICONS, SECRET_ICONS, type IconGroup } from '../ui/AppIcon'
+import { AppIcon, dockIcon, FEATURED_ICONS, ICON_SECTIONS, ICONS, iconsInPack, packById, packOf, SECRET_PACK } from '../ui/AppIcon'
 import { appIconChanged } from '../lib/appIcon'
 import { Avatar, Button, Empty, Field, Group, Header, Page, Row, Screen, Segmented, Sep, ToggleRow } from '../ui/kit'
 import { confirm, showMenu } from '../ui/overlays'
@@ -265,9 +265,9 @@ function Appearance() {
   )
 }
 
-function AppIconPage() {
+/** Changes the app icon (and says where it shows). */
+function useIconPicker() {
   const [icon, setIcon] = useSetting('appIcon')
-  const unlocked = useStore((s) => s.settings.pixelPal === 'unlocked')
   const pick = async (id: string) => {
     setIcon(id)
     if (!desktop) {
@@ -277,27 +277,123 @@ function AppIconPage() {
     await desktop.setIcon(id === 'default' ? null : await dockIcon(id))
     toast(desktop.platform === 'darwin' ? 'Dock icon changed' : 'Icon changed (shows on the taskbar while Apollo Delta is open)')
   }
-  const groups: Array<{ group: IconGroup | 'Secret'; title: string }> = [
-    { group: 'Colours', title: 'Colors' },
-    { group: 'Art Styles', title: 'Art Styles' },
-    ...(unlocked ? [{ group: 'Secret' as const, title: 'Sekrit' }] : [])
-  ]
+  return { icon, pick }
+}
+
+/** A tile on the icon pages: a card with a blue ring and a check when it holds the icon in use. */
+function IconCard({ selected, onPress, label, children, sub }: { selected: boolean; onPress: () => void; label: string; children: ReactNode; sub?: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      style={({ pressed }) => ({
+        width: '48%',
+        flexGrow: 0,
+        backgroundColor: colors.card,
+        borderRadius: 18,
+        borderWidth: 2,
+        borderColor: selected ? colors.accent : colors.dark ? 'transparent' : colors.border,
+        paddingVertical: 16,
+        paddingHorizontal: 10,
+        alignItems: 'center',
+        gap: 10,
+        opacity: pressed ? 0.75 : 1
+      })}
+    >
+      {selected && (
+        <View style={{ position: 'absolute', top: 8, right: 8, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="checkmark" size={15} color="#fff" />
+        </View>
+      )}
+      {children}
+      <View style={{ alignItems: 'center' }}>
+        <Text numberOfLines={1} style={{ color: colors.text, fontSize: fs(15), fontWeight: '700' }}>{label}</Text>
+        {sub && <Text numberOfLines={1} style={{ color: colors.dim, fontSize: fs(12.5), marginTop: 1 }}>{sub}</Text>}
+      </View>
+    </Pressable>
+  )
+}
+
+/** Three of a pack's icons fanned out, the first in front. */
+function PackCover({ ids }: { ids: string[] }) {
+  const shown = ids.slice(0, 3)
+  const size = 62
+  return (
+    <View style={{ width: size + 2 * 30, height: size + 8, alignItems: 'center', justifyContent: 'center' }}>
+      {[...shown].reverse().map((id, ri) => {
+        const i = shown.length - 1 - ri
+        const offset = shown.length === 1 ? 0 : (i - (shown.length - 1) / 2) * 30
+        return (
+          <View key={id} style={{ position: 'absolute', left: 30 + offset, top: 4 + Math.abs(offset) / 6, transform: [{ rotate: `${offset / 5}deg` }], shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4 - i }}>
+            <AppIcon id={id} size={size} />
+          </View>
+        )
+      })}
+    </View>
+  )
+}
+
+const SectionTitle = ({ children }: { children: string }) => <Text style={{ color: colors.text, fontSize: fs(17), fontWeight: '700', marginTop: 26, marginBottom: 10, marginLeft: 4 }}>{children}</Text>
+const Grid = ({ children }: { children: ReactNode }) => <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 }}>{children}</View>
+
+function AppIconPage() {
+  const { icon, pick } = useIconPicker()
+  const unlocked = useStore((s) => s.settings.pixelPal === 'unlocked')
+  const current = packOf(icon)
+  const sections = unlocked ? [...ICON_SECTIONS, { title: 'Secret', packs: [SECRET_PACK] }] : ICON_SECTIONS
   return (
     <Page>
-      {groups.map(({ group, title }) => (
-        <Group key={group} title={title}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', padding: 10, gap: 12 }}>
-            {ICONS.filter((i) => (group === 'Secret' ? SECRET_ICONS.has(i.id) : i.group === group && !SECRET_ICONS.has(i.id))).map((i) => (
-              <Pressable key={i.id} onPress={() => void pick(i.id)} accessibilityRole="button" accessibilityLabel={`${i.name} icon`} accessibilityState={{ selected: icon === i.id }} style={{ alignItems: 'center', gap: 6, width: 84 }}>
-                <View style={{ borderRadius: 18, borderWidth: 3, borderColor: icon === i.id ? colors.accent : 'transparent', padding: 2 }}>
-                  <AppIcon id={i.id} size={64} />
-                </View>
-                <Text numberOfLines={1} style={{ color: icon === i.id ? colors.accentHi : colors.text, fontSize: fs(12.5), fontWeight: '600' }}>{i.name}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Group>
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+        {FEATURED_ICONS.map((id) => {
+          const info = ICONS.find((i) => i.id === id)
+          return (
+            <Pressable key={id} onPress={() => void pick(id)} accessibilityRole="button" accessibilityLabel={`${info?.name} icon`} accessibilityState={{ selected: icon === id }} style={{ flex: 1, alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 18, paddingVertical: 14, borderWidth: 2, borderColor: icon === id ? colors.accent : colors.dark ? 'transparent' : colors.border }}>
+              <AppIcon id={id} size={58} />
+              <Text numberOfLines={1} style={{ color: colors.text, fontSize: fs(13.5), fontWeight: '700' }}>{info?.name}</Text>
+            </Pressable>
+          )
+        })}
+      </View>
+      {sections.map((section) => (
+        <View key={section.title}>
+          <SectionTitle>{section.title}</SectionTitle>
+          <Grid>
+            {section.packs.map((p) => {
+              const list = iconsInPack(p.id)
+              const cover = list.some((i) => i.id === icon) ? [icon, ...list.map((i) => i.id).filter((id) => id !== icon)] : list.map((i) => i.id)
+              return (
+                <IconCard key={p.id} selected={current === p.id} label={p.name} sub={`${list.length} icons`} onPress={() => go('SettingsPage', { page: `icon:${p.id}` })}>
+                  <PackCover ids={cover} />
+                </IconCard>
+              )
+            })}
+          </Grid>
+        </View>
       ))}
+      <Text style={{ color: colors.dim, fontSize: fs(12.5), marginTop: 18, marginHorizontal: 4, lineHeight: 17 }}>
+        Every icon is original art drawn for Apollo Delta.
+      </Text>
+    </Page>
+  )
+}
+
+function IconPackPage({ pack }: { pack: string }) {
+  const { icon, pick } = useIconPicker()
+  const info = packById(pack)
+  const list = info ? iconsInPack(info.id) : []
+  return (
+    <Page>
+      {info && <Text style={{ color: colors.dim, fontSize: fs(13.5), marginTop: 16, marginHorizontal: 4 }}>{info.blurb}</Text>}
+      <View style={{ height: 14 }} />
+      <Grid>
+        {list.map((i) => (
+          <IconCard key={i.id} selected={icon === i.id} label={i.name} sub="Apollo Delta" onPress={() => void pick(i.id)}>
+            <AppIcon id={i.id} size={84} />
+          </IconCard>
+        ))}
+      </Grid>
     </Page>
   )
 }
@@ -791,6 +887,15 @@ export function SettingsPage({ route }: NativeStackScreenProps<RootParams, 'Sett
       <Screen>
         <Header title="Search" subtitle={scope ? `in ${scope.startsWith('/') ? 'this feed' : `r/${scope}`}` : undefined} />
         <SearchView scope={scope || undefined} />
+      </Screen>
+    )
+  }
+  if (page.startsWith('icon:')) {
+    const pack = page.slice(5)
+    return (
+      <Screen>
+        <Header title={packById(pack)?.name ?? 'App Icon'} />
+        <IconPackPage pack={pack} />
       </Screen>
     )
   }
